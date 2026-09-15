@@ -126,37 +126,53 @@ app.post('/api/cura', (req, res) => {
   res.json({ ok: true });
 });
 
-// GET /api/concetti?materia=slug — browser dei concetti (screen 3, versione minima).
+// GET /api/concetti?materia=slug — browser dei concetti, con copertura
+// flashcard (quante carte esistono per quel concetto) per far vedere i
+// "buchi" della Fase 3, non solo un dump del frontmatter.
 app.get('/api/concetti', (req, res) => {
-  const fs = require('fs');
-  const out = [];
-  const materie = req.query.materia ? [req.query.materia] : vault.listMaterie();
-  for (const slug of materie) {
-    const dir = path.join(vault.MATERIE_DIR, slug, '02-concetti');
-    if (!fs.existsSync(dir)) continue;
-    for (const f of fs.readdirSync(dir)) {
-      if (!f.endsWith('.md')) continue;
-      const content = fs.readFileSync(path.join(dir, f), 'utf8');
-      const fm = {};
-      const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-      if (fmMatch) {
-        for (const line of fmMatch[1].split(/\r?\n/)) {
-          const m = line.match(/^([a-z_]+):\s*(.*)$/);
-          if (m) fm[m[1]] = m[2].replace(/^\[|\]$/g, '');
-        }
-      }
-      out.push({
-        materia: slug,
-        id: fm.id,
-        titolo: fm.titolo,
-        tipo: fm.tipo,
-        stato: fm.stato,
-        confidenza: fm.confidenza ? parseInt(fm.confidenza, 10) : 0,
-        tag: fm.tag || '',
-      });
-    }
+  const concetti = vault.listConcetti(req.query.materia || null);
+  const tutteLeCarte = vault.allCards();
+  const numCartePerConcetto = {};
+  for (const c of tutteLeCarte) {
+    numCartePerConcetto[c.concetto] = (numCartePerConcetto[c.concetto] || 0) + 1;
   }
-  res.json(out);
+  res.json(concetti.map((c) => ({ ...c, numFlashcard: numCartePerConcetto[c.id] || 0 })));
+});
+
+// GET /api/pipeline?materia=slug — stato di OGNI fase della pipeline di
+// studio (non solo ripasso/cura), per la dashboard come hub unico: cosa
+// c'è da fare in ciascuna fase, anche quelle guidate da skill Claude
+// (cattura, schematizza) invece che da questa web app.
+app.get('/api/pipeline', (req, res) => {
+  const materiaFiltro = req.query.materia || null;
+  const state = srs.loadState();
+  const t = srs.today();
+  const tutteLeCarte = vault.allCards();
+  const concettiConCarta = new Set(tutteLeCarte.map((c) => c.concetto));
+
+  const materie = (materiaFiltro ? [materiaFiltro] : vault.listMaterie()).map((slug) => {
+    const carte = tutteLeCarte.filter((c) => c.materia === slug);
+    const attiva = carte.filter((c) => c.stato === 'attiva');
+    const lezioni = vault.listLezioni(slug);
+    const concetti = vault.listConcetti(slug);
+
+    return {
+      slug,
+      nome: vault.readMateriaYml(slug).nome || slug,
+      cattura: { daProcessare: vault.inboxDaProcessare(slug) },
+      schematizza: { daSchematizzare: lezioni.filter((l) => l.stato === 'grezzo').length },
+      flashcard: {
+        concettiSenzaCarte: concetti.filter((c) => c.stato === 'attivo' && !concettiConCarta.has(c.id)).length,
+      },
+      cura: { daCurare: carte.filter((c) => c.stato === 'proposta').length },
+      ripasso: {
+        dovute: attiva.filter((c) => state.carte[c.srsId] && state.carte[c.srsId].due <= t).length,
+        nuove: attiva.filter((c) => !state.carte[c.srsId]).length,
+      },
+    };
+  });
+
+  res.json({ materie });
 });
 
 // In produzione (container, §8) serve anche il build statico del frontend.

@@ -119,6 +119,72 @@ function deleteCard(srsId) {
   return false;
 }
 
+// Frontmatter di un file .md qualunque (lezione, concetto...): stessa
+// sintassi piatta di materia.yml, letta con lo stesso parser di riga.
+function readFrontmatter(filePath) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const fm = {};
+  const blocco = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!blocco) return fm;
+  for (const line of blocco[1].split(/\r?\n/)) {
+    const m = line.match(/^([a-z_]+):\s*(.*)$/);
+    if (!m) continue;
+    let [, key, val] = m;
+    val = val.trim().replace(/^"(.*)"$/, '$1').replace(/^\[|\]$/g, '');
+    fm[key] = val;
+  }
+  return fm;
+}
+
+// Elenco dei concetti (frontmatter di 02-concetti/*.md), per materia o per
+// tutto il vault. Usato sia dal browser dei concetti sia dalla dashboard
+// per calcolare la copertura (quanti concetti non hanno ancora carte).
+function listConcetti(materiaFiltro) {
+  const out = [];
+  for (const slug of materiaFiltro ? [materiaFiltro] : listMaterie()) {
+    const dir = path.join(MATERIE_DIR, slug, '02-concetti');
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.md')) continue;
+      const fm = readFrontmatter(path.join(dir, f));
+      out.push({
+        materia: slug,
+        id: fm.id,
+        titolo: fm.titolo || '',
+        tipo: fm.tipo || '',
+        stato: fm.stato || '',
+        confidenza: fm.confidenza ? parseInt(fm.confidenza, 10) : 0,
+        tag: fm.tag || '',
+      });
+    }
+  }
+  return out;
+}
+
+// Elenco delle lezioni (frontmatter di 01-lezioni/*.md): serve alla
+// dashboard per sapere quante sono ancora "grezzo" (da schematizzare).
+function listLezioni(materiaFiltro) {
+  const out = [];
+  for (const slug of materiaFiltro ? [materiaFiltro] : listMaterie()) {
+    const dir = path.join(MATERIE_DIR, slug, '01-lezioni');
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.md')) continue;
+      const fm = readFrontmatter(path.join(dir, f));
+      out.push({ materia: slug, titolo: fm.titolo || f, data: fm.data || null, stato: fm.stato || 'grezzo' });
+    }
+  }
+  return out;
+}
+
+// Quanti elementi (foto, PDF, testo) attendono ancora /cattura in 00-inbox/,
+// escludendo _processati/ e i file di servizio come .gitkeep.
+function inboxDaProcessare(slug) {
+  const dir = path.join(MATERIE_DIR, slug, '00-inbox');
+  if (!fs.existsSync(dir)) return 0;
+  return fs.readdirSync(dir, { withFileTypes: true }).filter((d) => d.isFile() && d.name !== '.gitkeep').length;
+}
+
 function allCards({ soloStato = null } = {}) {
   const out = [];
   for (const slug of listMaterie()) {
@@ -139,9 +205,13 @@ module.exports = {
   MATERIE_DIR,
   listMaterie,
   readMateriaYml,
+  readFrontmatter,
   flashcardFiles,
   parseDeck,
   setCardStato,
   deleteCard,
   allCards,
+  listConcetti,
+  listLezioni,
+  inboxDaProcessare,
 };

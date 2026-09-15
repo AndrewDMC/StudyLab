@@ -1,7 +1,6 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { Dashboard } from './pages/Dashboard';
-import { Ripasso } from './pages/Ripasso';
-import { Cura } from './pages/Cura';
+import { ActiveRecall } from './pages/ActiveRecall';
 import { Concetti } from './pages/Concetti';
 
 export function App() {
@@ -12,15 +11,13 @@ export function App() {
         <NavLink to="/" end>
           Dashboard
         </NavLink>
-        <NavLink to="/ripasso">Ripasso</NavLink>
-        <NavLink to="/cura">Cura</NavLink>
+        <NavLink to="/active-recall">Active Recall</NavLink>
         <NavLink to="/concetti">Concetti</NavLink>
       </nav>
       <main>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/ripasso" element={<Ripasso />} />
-          <Route path="/cura" element={<Cura />} />
+          <Route path="/active-recall" element={<ActiveRecall />} />
           <Route path="/concetti" element={<Concetti />} />
         </Routes>
       </main>

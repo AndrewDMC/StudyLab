@@ -153,8 +153,23 @@ costruzione della sessione), non la riscrive.
 ```
 app/
 ├── server/index.js   # API Express: legge/scrive il vault via cli/lib/*
-└── src/               # React + Vite: Dashboard, Ripasso, Cura, Concetti
+└── src/pages/
+    ├── Dashboard.tsx      # hub: stato di OGNI fase per materia + scorciatoie
+    ├── ActiveRecall.tsx   # Ripasso e Cura unificati, due tab della stessa sezione
+    └── Concetti.tsx       # esplorazione per materia, non un dump tabellare
 ```
+
+La Dashboard non è solo lo stato delle flashcard: mostra una "pipeline
+strip" con tutte le fasi del piano (cattura, schematizza, flashcard, più i
+segnaposto per compattazione ed esami quando non ancora implementate — vedi
+`/api/pipeline`), così lo studente vede in un colpo d'occhio cosa può fare e
+cosa deve fare, non solo la coda di ripasso del giorno.
+
+Ripasso e Cura sono **la stessa sezione** (Active Recall), non due
+schermate separate: sono due momenti dello stesso ciclo (curare le proposte
+di `/genera-flashcard`, poi ripassarle), selezionabili con un tab
+`?tab=ripassa|cura` e un filtro materia `?materia=slug` nell'URL — la
+Dashboard vi linka già con i parametri giusti precompilati.
 
 Sviluppo: `npm install && npm run dev` dentro `app/` (avvia API su :8081 e
 Vite su :5173 insieme, via `concurrently`). Produzione: `npm run build &&

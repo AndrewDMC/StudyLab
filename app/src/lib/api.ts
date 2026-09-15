@@ -42,6 +42,24 @@ export interface Concetto {
   stato: string;
   confidenza: number;
   tag: string;
+  numFlashcard: number;
+}
+
+// Stato di ogni fase della pipeline (cattura → schematizza → flashcard →
+// cura → ripasso), non solo del ripasso: alimenta la dashboard come hub
+// unico invece che come sola vista sulle flashcard (vedi CLAUDE.md).
+export interface PipelineMateria {
+  slug: string;
+  nome: string;
+  cattura: { daProcessare: number };
+  schematizza: { daSchematizzare: number };
+  flashcard: { concettiSenzaCarte: number };
+  cura: { daCurare: number };
+  ripasso: { dovute: number; nuove: number };
+}
+
+export interface PipelineResponse {
+  materie: PipelineMateria[];
 }
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
@@ -58,6 +76,7 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   stato: () => req<StatoResponse>('/stato'),
+  pipeline: (materia?: string) => req<PipelineResponse>(`/pipeline${materia ? `?materia=${materia}` : ''}`),
   sessione: (materia?: string) => req<SessioneResponse>(`/sessione${materia ? `?materia=${materia}` : ''}`),
   valuta: (srsId: string, materia: string, concetto: string, voto: 1 | 2 | 3 | 4) =>
     req('/valuta', { method: 'POST', body: JSON.stringify({ srsId, materia, concetto, voto }) }),

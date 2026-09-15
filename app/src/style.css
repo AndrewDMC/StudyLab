@@ -90,11 +90,15 @@ h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
   font-size: 0.9rem;
 }
 
-.tutto-fatto { font-size: 1.1rem; margin-bottom: 1.5rem; }
+.tutto-fatto { font-size: 1.1rem; margin: 0; }
+
+.azioni-rapide { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0; margin-bottom: 1.5rem; }
+.azioni-rapide .bottone-grande { margin-bottom: 0; margin-right: 0.75rem; }
+.azioni-rapide .bottone-secondario { margin: 0 0.5rem 0 0; }
 
 .griglia-materie {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -103,19 +107,77 @@ h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
   background: var(--bg-scheda);
   border: 1px solid var(--bordo);
   border-radius: var(--raggio);
-  padding: 1rem 1.2rem;
+  padding: 1.1rem 1.2rem;
 }
 
-.scheda-materia h2 { margin: 0 0 0.6rem; font-size: 1.05rem; }
-.scheda-materia dl { margin: 0; }
-.scheda-materia dl > div { display: flex; justify-content: space-between; padding: 0.2rem 0; }
-.scheda-materia dt { color: var(--testo-debole); font-size: 0.88rem; }
-.scheda-materia dd { margin: 0; font-weight: 600; }
-.scheda-materia dd.evidenzia { color: var(--arancio); }
-.scheda-materia .nota { font-weight: 400; color: var(--testo-debole); font-size: 0.8rem; }
-.scheda-materia .countdown { margin: 0.6rem 0 0; font-size: 0.85rem; color: var(--testo-debole); }
+.scheda-materia-intestazione { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; }
+.scheda-materia h2 { margin: 0; font-size: 1.05rem; }
+.scheda-materia .countdown { font-size: 0.78rem; color: var(--testo-debole); white-space: nowrap; }
 
-.pagina-centrata { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 2rem; }
+.pipeline-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.pipeline-fase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0.4rem 0.2rem;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--bordo);
+}
+
+.pipeline-numero { font-weight: 700; font-size: 0.95rem; }
+.pipeline-label { font-size: 0.62rem; color: var(--testo-debole); text-transform: uppercase; letter-spacing: 0.02em; margin-top: 0.1rem; }
+.pipeline-fase.attenzione .pipeline-numero { color: var(--arancio); }
+.pipeline-fase.pipeline-futura { opacity: 0.45; }
+
+.scheda-materia-azioni { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.chip-azione {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--bordo);
+  color: var(--testo);
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+.chip-azione.evidenzia { border-color: var(--accento); color: var(--accento); font-weight: 600; }
+
+.pannello-centrato { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 1rem; }
+
+.barra-controlli { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.barra-controlli .ricerca { margin-bottom: 0; flex: 1; min-width: 200px; }
+
+.tabs { display: inline-flex; gap: 0.3rem; background: var(--bg-scheda); border: 1px solid var(--bordo); border-radius: 999px; padding: 0.2rem; }
+.tabs .tab { background: none; border: none; padding: 0.45rem 0.9rem; border-radius: 999px; color: var(--testo-debole); font-size: 0.9rem; cursor: pointer; }
+.tabs .tab.attiva { background: var(--accento); color: var(--accento-testo); font-weight: 600; }
+
+.select-materia {
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--raggio);
+  border: 1px solid var(--bordo);
+  background: var(--bg-scheda);
+  color: var(--testo);
+  font-size: 0.88rem;
+}
+
+.chip-filtro {
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--bordo);
+  background: var(--bg-scheda);
+  color: var(--testo-debole);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.chip-filtro.attiva { border-color: var(--arancio); color: var(--arancio); font-weight: 600; }
 
 .progresso { color: var(--testo-debole); font-size: 0.9rem; margin-bottom: 0.75rem; }
 
@@ -212,12 +274,47 @@ h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
   font-size: 0.95rem;
 }
 
-.tabella-scroll { overflow-x: auto; }
-.tabella-concetti { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.9rem; }
-.tabella-concetti th, .tabella-concetti td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--bordo); }
-.tabella-concetti th { color: var(--testo-debole); font-weight: 600; font-size: 0.8rem; }
-.tabella-concetti .mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; }
-.tabella-concetti tr.stato-bozza { opacity: 0.6; }
+.gruppo-materia { margin-bottom: 1.75rem; }
+.gruppo-titolo { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--testo-debole); margin: 0 0 0.6rem; }
+
+.griglia-concetti { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.75rem; }
+
+.scheda-concetto {
+  background: var(--bg-scheda);
+  border: 1px solid var(--bordo);
+  border-radius: var(--raggio);
+  padding: 0.85rem 1rem;
+}
+.scheda-concetto.stato-bozza { opacity: 0.65; }
+
+.scheda-concetto-intestazione { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; }
+.mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.78rem; color: var(--testo-debole); }
+
+.badge-bozza {
+  font-size: 0.68rem;
+  background: var(--bordo);
+  color: var(--testo-debole);
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+.scheda-concetto-titolo { margin: 0 0 0.4rem; font-weight: 600; font-size: 0.95rem; line-height: 1.3; }
+
+.scheda-concetto-meta { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; font-size: 0.75rem; color: var(--testo-debole); }
+.scheda-concetto-meta .tag { font-style: italic; }
+
+.scheda-concetto-footer { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; font-size: 0.75rem; }
+
+.badge-copertura {
+  margin-left: auto;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--bordo);
+  color: var(--testo-debole);
+}
+.badge-copertura.vuota { color: var(--arancio); border-color: var(--arancio); }
 
 .barra-confidenza {
   display: inline-block;
