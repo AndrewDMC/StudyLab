@@ -204,6 +204,98 @@ function listSintesi(materiaFiltro) {
   return out;
 }
 
+// Elenco ricorsivo dei file sorgente in 05-esami/originali/ (PDF, scan),
+// percorso relativo alla RADICE DELLA MATERIA (es.
+// "05-esami/originali/secondo-parziale/2008-06-16.pdf") — quella
+// struttura ha sottocartelle libere (es.
+// "anni-precedenti/Testi-esami-anni-precedenti/", "secondo-parziale/"),
+// non un livello solo. Stesso formato di percorso usato dal campo `fonte`
+// che /estrai-esami scrive nel frontmatter degli estratti (coerente con
+// `fonte` nelle lezioni, anch'esso relativo alla materia, vedi
+// CLAUDE.md) — è quello che permette il confronto diretto in
+// esamiDaEstrarre(), sotto: senza questa coerenza il conteggio "da
+// estrarre" non riconoscerebbe mai un estratto come già coperto.
+function walkFiles(dir) {
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  for (const d of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (d.name.startsWith('.')) continue;
+    const full = path.join(dir, d.name);
+    if (d.isDirectory()) out.push(...walkFiles(full));
+    else out.push(full);
+  }
+  return out;
+}
+
+function esamiOriginali(slug) {
+  const materiaDir = path.join(MATERIE_DIR, slug);
+  const dir = path.join(materiaDir, '05-esami', 'originali');
+  return walkFiles(dir).map((f) => path.relative(materiaDir, f).split(path.sep).join('/'));
+}
+
+// Originali senza un estratto corrispondente (confronto diretto sul
+// percorso, stesso formato relativo alla materia in entrambi i lati —
+// vedi nota su esamiOriginali). Centralizzata qui perché sia l'API sia
+// eventuali script CLI devono contare allo stesso modo.
+function esamiDaEstrarre(slug) {
+  const fontiEstratte = new Set(esamiEstratti(slug).map((e) => e.fonte));
+  return esamiOriginali(slug).filter((f) => !fontiEstratte.has(f));
+}
+
+// Estratti (frontmatter di 05-esami/estratti/*.md, scritti da /estrai-esami).
+function esamiEstratti(materiaFiltro) {
+  const out = [];
+  for (const slug of materiaFiltro ? [materiaFiltro] : listMaterie()) {
+    const dir = path.join(MATERIE_DIR, slug, '05-esami', 'estratti');
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.md')) continue;
+      const fm = readFrontmatter(path.join(dir, f));
+      out.push({ materia: slug, file: f, fonte: fm.fonte || null, esercizi: fm.esercizi ? parseInt(fm.esercizi, 10) : 0, dataEsame: fm.data_esame || null });
+    }
+  }
+  return out;
+}
+
+// Consegne generate (frontmatter di 05-esami/generati/*-consegna.md,
+// scritte da /simula-esame). Le soluzioni gemelle non servono a questa
+// lista: restano nascoste finché non si lancia /correggi.
+function esamiGenerati(materiaFiltro) {
+  const out = [];
+  for (const slug of materiaFiltro ? [materiaFiltro] : listMaterie()) {
+    const dir = path.join(MATERIE_DIR, slug, '05-esami', 'generati');
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('-consegna.md')) continue;
+      const fm = readFrontmatter(path.join(dir, f));
+      out.push({ materia: slug, file: f, slug: f.replace(/-consegna\.md$/, ''), generato: fm.generato || null, punteggioTotale: fm.punteggio_totale || null });
+    }
+  }
+  return out;
+}
+
+// Correzioni (frontmatter di 06-simulazioni/*.md, scritte da /correggi).
+function simulazioni(materiaFiltro) {
+  const out = [];
+  for (const slug of materiaFiltro ? [materiaFiltro] : listMaterie()) {
+    const dir = path.join(MATERIE_DIR, slug, '06-simulazioni');
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.md')) continue;
+      const fm = readFrontmatter(path.join(dir, f));
+      out.push({
+        materia: slug,
+        file: f,
+        simulazione: fm.simulazione || null,
+        data: fm.data || null,
+        punteggio: fm.punteggio || null,
+        punteggioTotale: fm.punteggio_totale || null,
+      });
+    }
+  }
+  return out;
+}
+
 // Quanti elementi (foto, PDF, testo) attendono ancora /cattura in 00-inbox/,
 // escludendo _processati/ e i file di servizio come .gitkeep.
 function inboxDaProcessare(slug) {
@@ -212,7 +304,14 @@ function inboxDaProcessare(slug) {
   return fs.readdirSync(dir, { withFileTypes: true }).filter((d) => d.isFile() && d.name !== '.gitkeep').length;
 }
 
-const SEZIONI_LEGGIBILI = { lezioni: '01-lezioni', concetti: '02-concetti', sintesi: '03-sintesi' };
+const SEZIONI_LEGGIBILI = {
+  lezioni: '01-lezioni',
+  concetti: '02-concetti',
+  sintesi: '03-sintesi',
+  'esami-estratti': path.join('05-esami', 'estratti'),
+  'esami-generati': path.join('05-esami', 'generati'),
+  simulazioni: '06-simulazioni',
+};
 
 // Legge un file di una sezione del vault in modo sicuro per un endpoint
 // HTTP: materia e sezione sono validate su whitelist, e il nome file deve
@@ -271,6 +370,11 @@ module.exports = {
   listConcetti,
   listLezioni,
   listSintesi,
+  esamiOriginali,
+  esamiEstratti,
+  esamiDaEstrarre,
+  esamiGenerati,
+  simulazioni,
   inboxDaProcessare,
   leggiContenuto,
   inboxDir,

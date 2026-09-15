@@ -4,9 +4,9 @@ import { api, PipelineMateria, StatoResponse } from '../lib/api';
 
 // La dashboard è l'hub: non solo lo stato delle flashcard, ma una vista su
 // ogni fase della pipeline di studio (cattura → schematizza → flashcard →
-// cura → ripasso, più compattazione/esami quando saranno implementate),
-// con scorciatoie dirette a ciò che c'è da fare (vedi feedback utente:
-// "tutte le cose che può fare e tutto quello che deve fare").
+// compattazione → esami → cura → ripasso), con scorciatoie dirette a ciò
+// che c'è da fare (vedi feedback utente: "tutte le cose che può fare e
+// tutto quello che deve fare").
 export function Dashboard() {
   const [stato, setStato] = useState<StatoResponse | null>(null);
   const [pipeline, setPipeline] = useState<PipelineMateria[] | null>(null);
@@ -91,16 +91,24 @@ export function Dashboard() {
   );
 }
 
-// Striscia delle fasi dello studio (PIANO.md §2): le prime quattro sono
-// tutte azionabili da Materiali (via coda job); Esami resta un segnaposto
-// — la fase esiste nel piano ma non ha ancora un motore (Fase 6, dipende
-// da /estrai-esami), e va detto chiaramente invece di nasconderla.
+// Striscia delle fasi dello studio (PIANO.md §2), tutte azionabili da
+// Materiali (via coda job) — Esami (Fase 6: /estrai-esami, /simula-esame,
+// /correggi) mostra i PDF ancora da estrarre, o le simulazioni generate
+// ancora da correggere se l'estrazione è già coperta.
 function PipelineStrip({ slug, p }: { slug: string; p: PipelineMateria }) {
   const fasi: { label: string; count: number; nota?: string }[] = [
     { label: 'Cattura', count: p.cattura.daProcessare, nota: 'clicca per caricare o lanciare /cattura' },
     { label: 'Schematizza', count: p.schematizza.daSchematizzare, nota: 'clicca per schematizzare le lezioni grezze' },
     { label: 'Flashcard', count: p.flashcard.concettiSenzaCarte, nota: 'concetti senza carte — clicca per generarle' },
     { label: 'Compattazione', count: p.compattazione.settimaneSenzaSintesi, nota: 'settimane senza sintesi — clicca per compattarle' },
+    {
+      label: 'Esami',
+      count: p.esami.daEstrarre > 0 ? p.esami.daEstrarre : p.esami.daCorreggere,
+      nota:
+        p.esami.daEstrarre > 0
+          ? 'PDF d\'esame non ancora estratti — clicca per estrarli'
+          : 'simulazioni generate ancora da correggere',
+    },
   ];
   return (
     <div className="pipeline-strip">
@@ -115,10 +123,6 @@ function PipelineStrip({ slug, p }: { slug: string; p: PipelineMateria }) {
           <span className="pipeline-label">{f.label}</span>
         </Link>
       ))}
-      <div className="pipeline-fase pipeline-futura" title="Fase 6 del piano, non ancora implementata">
-        <span className="pipeline-numero">—</span>
-        <span className="pipeline-label">Esami</span>
-      </div>
     </div>
   );
 }

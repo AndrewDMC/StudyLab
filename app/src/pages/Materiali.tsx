@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, Job, Lezione, MateriaStato, PipelineMateria, SkillNome, Sintesi } from '../lib/api';
+import {
+  api,
+  EsameEstratto,
+  EsameGenerato,
+  Job,
+  Lezione,
+  MateriaStato,
+  PipelineMateria,
+  SkillNome,
+  Simulazione,
+  Sintesi,
+} from '../lib/api';
 import { Markdown } from '../components/Markdown';
 
 // "Sezione di inserimento" + "sezione di visualizzazione" richieste
@@ -51,12 +62,15 @@ export function Materiali() {
   );
 }
 
-type Apribile = { sezione: 'lezioni' | 'sintesi'; file: string; titolo: string };
+type Apribile = { sezione: 'lezioni' | 'sintesi' | 'esami-estratti' | 'esami-generati' | 'simulazioni'; file: string; titolo: string };
 
 function ContenutoMateria({ materia }: { materia: string }) {
   const [pipeline, setPipeline] = useState<PipelineMateria | null>(null);
   const [lezioni, setLezioni] = useState<Lezione[] | null>(null);
   const [sintesi, setSintesi] = useState<Sintesi[] | null>(null);
+  const [estratti, setEstratti] = useState<EsameEstratto[] | null>(null);
+  const [generati, setGenerati] = useState<EsameGenerato[] | null>(null);
+  const [simulazioni, setSimulazioni] = useState<Simulazione[] | null>(null);
   const [aperta, setAperta] = useState<Apribile | null>(null);
   const [contenuto, setContenuto] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
@@ -66,6 +80,9 @@ function ContenutoMateria({ materia }: { materia: string }) {
     api.pipeline(materia).then((r) => setPipeline(r.materie[0] || null));
     api.lezioni(materia).then(setLezioni);
     api.sintesi(materia).then(setSintesi);
+    api.esamiEstratti(materia).then(setEstratti);
+    api.esamiGenerati(materia).then(setGenerati);
+    api.simulazioni(materia).then(setSimulazioni);
   }, [materia]);
 
   useEffect(() => {
@@ -154,6 +171,77 @@ function ContenutoMateria({ materia }: { materia: string }) {
                   <span className="riga-lezione-titolo">{s.periodo}</span>
                   <span className="riga-lezione-meta">
                     <span className="badge-stato">{s.tipo}</span> · generata {s.generato || '?'}
+                  </span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="gruppo-materia">
+        <h2 className="gruppo-titolo">Esami</h2>
+        {!estratti || !generati || !simulazioni ? (
+          <p>Caricamento…</p>
+        ) : estratti.length === 0 && generati.length === 0 ? (
+          <p className="sottotitolo">
+            Nessun esame estratto ancora. Lancia "Estrai esami" dalle Azioni qui sopra per leggere i temi in
+            05-esami/originali/.
+          </p>
+        ) : (
+          <div className="lista-lezioni">
+            {estratti.map((e) => (
+              <div key={e.file} className={aperta?.file === e.file ? 'riga-lezione attiva' : 'riga-lezione'}>
+                <button
+                  className="riga-lezione-corpo"
+                  onClick={() => apri({ sezione: 'esami-estratti', file: e.file, titolo: e.file })}
+                >
+                  <span className="riga-lezione-titolo">{e.dataEsame || e.file}</span>
+                  <span className="riga-lezione-meta">
+                    <span className="badge-stato">estratto</span> · {e.esercizi} esercizi · {e.file}
+                  </span>
+                </button>
+              </div>
+            ))}
+            {generati.map((g) => {
+              // `simulazione` nel frontmatter delle correzioni è relativo alla
+              // radice della materia (come `fonte` nelle lezioni, vedi
+              // CLAUDE.md), non alla radice del vault — niente prefisso
+              // "materie/<slug>/" qui (bug reale corretto dopo test su vault).
+              const corretta = simulazioni.some((s) => s.simulazione === `05-esami/generati/${g.file}`);
+              return (
+                <div key={g.file} className={aperta?.file === g.file ? 'riga-lezione attiva' : 'riga-lezione'}>
+                  <button
+                    className="riga-lezione-corpo"
+                    onClick={() => apri({ sezione: 'esami-generati', file: g.file, titolo: g.slug })}
+                  >
+                    <span className="riga-lezione-titolo">{g.slug}</span>
+                    <span className="riga-lezione-meta">
+                      <span className="badge-stato">variante</span> · generata {g.generato || '?'}
+                    </span>
+                  </button>
+                  {!corretta && (
+                    <button
+                      className="chip-azione"
+                      disabled={inCorso === `correggi-${g.slug}`}
+                      title="Richiede di aver già risposto nell'area di risposta della consegna"
+                      onClick={() => accoda('correggi', { materia, slug: g.slug }, `correggi-${g.slug}`)}
+                    >
+                      {inCorso === `correggi-${g.slug}` ? 'Accodo…' : 'Correggi'}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            {simulazioni.map((s) => (
+              <div key={s.file} className={aperta?.file === s.file ? 'riga-lezione attiva' : 'riga-lezione'}>
+                <button
+                  className="riga-lezione-corpo"
+                  onClick={() => apri({ sezione: 'simulazioni', file: s.file, titolo: `Correzione ${s.data || ''}` })}
+                >
+                  <span className="riga-lezione-titolo">{s.data}</span>
+                  <span className="riga-lezione-meta">
+                    <span className="badge-stato">corretta</span> · {s.punteggio ?? '?'}/{s.punteggioTotale ?? '?'}
                   </span>
                 </button>
               </div>
@@ -260,6 +348,21 @@ function AzioniPipeline({
           {inCorso === 'compatta'
             ? 'Accodo…'
             : `Compatta (${pipeline.compattazione.settimaneSenzaSintesi} settimane senza sintesi)`}
+        </button>
+        <button
+          className="chip-azione"
+          disabled={pipeline.esami.daEstrarre === 0 || inCorso === 'estrai-esami'}
+          onClick={() => accoda('estrai-esami', { materia }, 'estrai-esami')}
+        >
+          {inCorso === 'estrai-esami' ? 'Accodo…' : `Estrai esami (${pipeline.esami.daEstrarre} PDF non estratti)`}
+        </button>
+        <button
+          className="chip-azione"
+          disabled={pipeline.esami.estratti === 0 || inCorso === 'simula-esame'}
+          title={pipeline.esami.estratti === 0 ? 'Serve prima almeno un esame estratto' : undefined}
+          onClick={() => accoda('simula-esame', { materia }, 'simula-esame')}
+        >
+          {inCorso === 'simula-esame' ? 'Accodo…' : 'Genera simulazione'}
         </button>
       </div>
       <p className="nota">

@@ -167,6 +167,9 @@ app.get('/api/pipeline', (req, res) => {
     const lezioni = vault.listLezioni(slug);
     const concetti = vault.listConcetti(slug);
     const sintesi = vault.listSintesi(slug);
+    const estratti = vault.esamiEstratti(slug);
+    const generati = vault.esamiGenerati(slug);
+    const correzioni = vault.simulazioni(slug);
 
     // Settimane con almeno una lezione schematizzata che non hanno ancora
     // una sintesi settimanale corrispondente — è il "da fare" reale della
@@ -176,6 +179,17 @@ app.get('/api/pipeline', (req, res) => {
     );
     const settimaneConSintesi = new Set(sintesi.filter((s) => s.tipo === 'settimanale').map((s) => s.periodo));
     const elencoSettimaneScoperte = [...settimaneConLezioni].filter((w) => !settimaneConSintesi.has(w)).sort();
+
+    // Esami (Fase 6): originali senza estratto corrispondente, e consegne
+    // generate senza correzione — i campi `fonte`/`simulazione` degli
+    // estratti/correzioni sono relativi alla RADICE DELLA MATERIA (stesso
+    // formato di `fonte` nelle lezioni, vedi CLAUDE.md), non alla radice
+    // del vault: il confronto va fatto con lo stesso formato su entrambi
+    // i lati, altrimenti non riconosce mai un estratto/correzione come
+    // già coperto (bug reale trovato testando /estrai-esami sul vault).
+    const daEstrarre = vault.esamiDaEstrarre(slug).length;
+    const consegneCorrette = new Set(correzioni.map((c) => c.simulazione));
+    const daCorreggere = generati.filter((g) => !consegneCorrette.has(`05-esami/generati/${g.file}`)).length;
 
     return {
       slug,
@@ -191,6 +205,11 @@ app.get('/api/pipeline', (req, res) => {
       // *corrente* — sbagliata se il materiale scoperto è di settimane
       // passate (vedi test con lezione datata 2024).
       compattazione: { settimaneSenzaSintesi: elencoSettimaneScoperte.length, prossima: elencoSettimaneScoperte[0] || null },
+      esami: {
+        daEstrarre,
+        estratti: estratti.reduce((s, e) => s + (e.esercizi || 0), 0),
+        daCorreggere,
+      },
       cura: { daCurare: carte.filter((c) => c.stato === 'proposta').length },
       ripasso: {
         dovute: attiva.filter((c) => state.carte[c.srsId] && state.carte[c.srsId].due <= t).length,
@@ -210,6 +229,21 @@ app.get('/api/lezioni', (req, res) => {
 // GET /api/sintesi?materia=slug — elenco sintesi settimanali/mensili (Fase 5).
 app.get('/api/sintesi', (req, res) => {
   res.json(vault.listSintesi(req.query.materia || null));
+});
+
+// GET /api/esami-estratti?materia=slug — estratti da /estrai-esami (Fase 6).
+app.get('/api/esami-estratti', (req, res) => {
+  res.json(vault.esamiEstratti(req.query.materia || null));
+});
+
+// GET /api/esami-generati?materia=slug — consegne generate da /simula-esame.
+app.get('/api/esami-generati', (req, res) => {
+  res.json(vault.esamiGenerati(req.query.materia || null));
+});
+
+// GET /api/simulazioni?materia=slug — correzioni scritte da /correggi.
+app.get('/api/simulazioni', (req, res) => {
+  res.json(vault.simulazioni(req.query.materia || null));
 });
 
 // GET /api/contenuto?materia=slug&sezione=lezioni|concetti|sintesi&file=nome.md

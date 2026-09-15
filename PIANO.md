@@ -16,7 +16,7 @@ trasformazione. Nessuna API a pagamento, nessun dato fuori dal PC.
 | Web app: Materiali (upload, viewer Markdown, trigger skill) | `app/src/pages/Materiali.tsx` | ✅ |
 | Coda job + worker (`node cli/worker.js`) | `cli/lib/jobs.js`, `cli/worker.js` | ✅ (uso locale; il container di §8 resta da fare) |
 | Skill `/compatta` | `.claude/skills/compatta/` | ✅ |
-| `/estrai-esami`, `/simula-esame`, `/correggi` | — | ⬜ |
+| Skill `/estrai-esami`, `/simula-esame`, `/correggi` | `.claude/skills/` | ✅ |
 | Statistiche avanzate in dashboard (heatmap, countdown) | — | ⬜ |
 | Deploy sul server Ubuntu (Docker, Tailscale) | — | ⬜ |
 | Editor/digitalizzazione schemi | — | ⬜ |
@@ -294,7 +294,7 @@ per il countdown esame e per `/compatta settimana|mese`.
 Schermate in ordine di priorità:
 
 1. **Dashboard** — hub: pipeline strip per materia (cattura, schematizza,
-   flashcard, più segnaposto compattazione/esami), scorciatoie dirette.
+   flashcard, compattazione, esami), scorciatoie dirette.
    **Implementata** (countdown esame e heatmap confidenza restano da fare:
    bastano `nome`/`data_esame` in `materia.yml` quando popolati).
 2. **Materiali** — upload in `00-inbox/`, viewer Markdown delle lezioni
@@ -309,9 +309,13 @@ Schermate in ordine di priorità:
 4. **Concetti** — esplorazione raggruppata per materia, con badge di
    copertura flashcard. **Versione minima implementata** (ricerca e filtro
    per titolo/ID/tag/materia); il grafo dei prerequisiti resta da fare.
-5. **Simulazione d'esame** — timer, esercizi, area di risposta. Non ancora
-   implementata: dipende da `/estrai-esami` (Fase 6), non ha senso costruire
-   l'interfaccia prima del motore che la alimenta.
+5. **Simulazione d'esame** — timer, esercizi, area di risposta a schermo.
+   Il motore (Fase 6: `/estrai-esami`, `/simula-esame`, `/correggi`) è
+   **implementato** e azionabile da Materiali (estrazione, generazione,
+   correzione via coda job) — quello che resta è solo l'interfaccia
+   dedicata (timer, area di risposta a schermo invece che editare il file
+   consegna a mano): non ha più senso rimandarla ora che il motore esiste,
+   ma non è ancora stata costruita.
 
 **Implementato** in `app/` (Vite + React + TypeScript + Express), come
 descritto in CLAUDE.md. Il server riusa `cli/lib/*` — stessa logica della
@@ -349,7 +353,7 @@ mai copie locali sincronizzate.
 | 3 | ✅ Motore SRS + CLI di ripasso minimale | 2-3 sere | **Sì**: sistema base completo |
 | 4 | ✅ Web app: Dashboard hub, Active Recall, Concetti, **Materiali** (upload, viewer Markdown, trigger skill via coda job) | 3-5 sere | Esperienza vera |
 | 5 | ✅ `/compatta` settimanale e mensile | 1 sera | Da fine primo mese |
-| 6 | `/estrai-esami` + `/simula-esame` + `/correggi` | 2-3 sere | Sotto sessione |
+| 6 | ✅ `/estrai-esami` + `/simula-esame` + `/correggi`, integrate in dashboard e coda job | 2-3 sere | Sotto sessione |
 | 7 | Statistiche avanzate (heatmap, countdown esame) | 2 sere | Nice to have — dashboard base già in Fase 4 |
 | 8 | 🟡 Deploy su home server + accesso remoto (§8) — **la coda job + worker sono già implementati e usabili in locale**; resta da fare solo il container Docker + Tailscale sul server Ubuntu | 1-2 sere | Sì, da tutti i dispositivi |
 | 9 | Editor di schemi e digitalizzazione (§9) | 3-4 sere | Chiude il ciclo |

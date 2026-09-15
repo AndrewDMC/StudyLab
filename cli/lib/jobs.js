@@ -45,6 +45,21 @@ function validaArgomento(argomento) {
   return argomento;
 }
 
+// Slug di un esame generato/estratto (es. "2026-09-15-pipeline-hazard") o
+// un frammento di percorso per filtrare /estrai-esami (es.
+// "secondo-parziale", o un nome file con spazi/parentesi come nei PDF
+// storici) — più permissivo di RE_SLUG perché deve poter combaciare con
+// nomi di file reali già presenti in 05-esami/originali/, ma comunque
+// ristretto: niente `/`, `..`, o caratteri di shell.
+const RE_ESAME_SLUG = /^[a-zA-Z0-9 ._-]+$/;
+
+function validaSlugEsame(slug) {
+  if (!RE_ESAME_SLUG.test(slug || '') || slug.includes('..')) {
+    throw new Error(`slug esame non valido: ${slug}`);
+  }
+  return slug;
+}
+
 function validaTipoPeriodo(tipo) {
   if (tipo !== 'settimana' && tipo !== 'mese') throw new Error(`tipo periodo non valido: ${tipo}`);
   return tipo;
@@ -81,6 +96,21 @@ const SKILL_COMANDI = {
     const tipo = validaTipoPeriodo(args.tipo);
     const periodo = validaPeriodo(tipo, args.periodo);
     return `/compatta ${materia} ${tipo}${periodo ? ` ${periodo}` : ''}`;
+  },
+  'estrai-esami': (args) => {
+    const materia = validaMateria(args.materia);
+    const percorso = args.percorso ? validaSlugEsame(args.percorso) : null;
+    return `/estrai-esami ${materia}${percorso ? ` ${percorso}` : ''}`;
+  },
+  'simula-esame': (args) => {
+    const materia = validaMateria(args.materia);
+    const argomento = validaArgomento(args.argomento);
+    return `/simula-esame ${materia}${argomento ? ` ${argomento}` : ''}`;
+  },
+  correggi: (args) => {
+    const materia = validaMateria(args.materia);
+    const slug = validaSlugEsame(args.slug);
+    return `/correggi ${materia} ${slug}`;
   },
 };
 

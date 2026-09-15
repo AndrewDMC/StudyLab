@@ -119,6 +119,61 @@ Nome file: `settimana-AAAA-Www.md` o `mensile-AAAA-MM.md`. La mensile legge
 le settimanali già esistenti del mese, mai le lezioni direttamente (vedi
 skill `/compatta` e PIANO.md §2).
 
+## Frontmatter degli esami (`05-esami/`)
+
+Estratto da un PDF originale (`05-esami/estratti/*.md`, scritto da
+`/estrai-esami`):
+
+```yaml
+---
+materia: architettura
+fonte: 05-esami/originali/secondo-parziale/2008-06-16.pdf
+data_esame: 2008-06-16   # o null se non deducibile
+estratto: 2026-09-15      # data di estrazione
+esercizi: 4
+---
+```
+
+Consegna generata (`05-esami/generati/<slug>-consegna.md`, scritta da
+`/simula-esame` — mai soluzioni al suo interno):
+
+```yaml
+---
+materia: architettura
+tipo: variante
+basato_su: [05-esami/estratti/2008-06-16.md]
+generato: 2026-09-15
+tempo_minuti: 90
+punteggio_totale: 30
+---
+```
+
+Soluzione gemella (`05-esami/generati/<slug>-soluzione.md`, stesso slug,
+file separato apposta):
+
+```yaml
+---
+materia: architettura
+consegna: 05-esami/generati/2026-09-15-pipeline-hazard-consegna.md
+generato: 2026-09-15
+---
+```
+
+Correzione (`06-simulazioni/AAAA-MM-GG-<slug>.md`, scritta da
+`/correggi` — è l'unica skill autorizzata a scrivere `confidenza` nelle
+note-concetto):
+
+```yaml
+---
+materia: architettura
+simulazione: 05-esami/generati/2026-09-15-pipeline-hazard-consegna.md
+data: 2026-09-15
+punteggio: 24
+punteggio_totale: 30
+concetti: [C-ARCH-0042, C-ARCH-0038]
+---
+```
+
 ## Convenzioni di naming
 
 - Lezioni: `AAAA-MM-GG-slug-argomento.md`
@@ -140,6 +195,17 @@ skill `/compatta` e PIANO.md §2).
   la settimanale) o sintesi settimanali già esistenti (per la mensile, mai
   le lezioni direttamente) in `03-sintesi/`, con mappa concetti, schema
   ~2 pagine, nodi deboli e domande di collegamento trasversale.
+- `/estrai-esami <materia> [percorso-parziale]` — legge i PDF in
+  `05-esami/originali/` (sola lettura) e li struttura in
+  `05-esami/estratti/`: un file per PDF, con tipologia, concetti,
+  difficoltà, punteggio e traccia di soluzione per ogni esercizio.
+- `/simula-esame <materia> [argomento|ID]` — genera una variante d'esame
+  nuova dalla tassonomia in `05-esami/estratti/` (richiede
+  `/estrai-esami` già lanciata), in `05-esami/generati/`: consegna senza
+  soluzioni + soluzione/rubrica separata.
+- `/correggi <materia> <slug>` — corregge una simulazione risolta con la
+  rubrica gemella, scrive il report in `06-simulazioni/` e aggiorna
+  `confidenza` nelle note-concetto testate.
 - `/digitalizza-schema` — (Fase 9, non ancora implementata) converte uno
   schema disegnato a mano in outline Markdown + Mermaid.
 

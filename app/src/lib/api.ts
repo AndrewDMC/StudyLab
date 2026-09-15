@@ -55,6 +55,7 @@ export interface PipelineMateria {
   schematizza: { daSchematizzare: number };
   flashcard: { concettiSenzaCarte: number };
   compattazione: { settimaneSenzaSintesi: number; prossima: string | null };
+  esami: { daEstrarre: number; estratti: number; daCorreggere: number };
   cura: { daCurare: number };
   ripasso: { dovute: number; nuove: number };
 }
@@ -79,7 +80,32 @@ export interface Sintesi {
   generato: string | null;
 }
 
-export type SkillNome = 'cattura' | 'schematizza' | 'genera-flashcard' | 'compatta';
+export interface EsameEstratto {
+  materia: string;
+  file: string;
+  fonte: string | null;
+  esercizi: number;
+  dataEsame: string | null;
+}
+
+export interface EsameGenerato {
+  materia: string;
+  file: string;
+  slug: string;
+  generato: string | null;
+  punteggioTotale: string | null;
+}
+
+export interface Simulazione {
+  materia: string;
+  file: string;
+  simulazione: string | null;
+  data: string | null;
+  punteggio: string | null;
+  punteggioTotale: string | null;
+}
+
+export type SkillNome = 'cattura' | 'schematizza' | 'genera-flashcard' | 'compatta' | 'estrai-esami' | 'simula-esame' | 'correggi';
 
 export interface Job {
   id: string;
@@ -119,7 +145,10 @@ export const api = {
 
   lezioni: (materia?: string) => req<Lezione[]>(`/lezioni${materia ? `?materia=${materia}` : ''}`),
   sintesi: (materia?: string) => req<Sintesi[]>(`/sintesi${materia ? `?materia=${materia}` : ''}`),
-  contenuto: (materia: string, sezione: 'lezioni' | 'concetti' | 'sintesi', file: string) =>
+  esamiEstratti: (materia?: string) => req<EsameEstratto[]>(`/esami-estratti${materia ? `?materia=${materia}` : ''}`),
+  esamiGenerati: (materia?: string) => req<EsameGenerato[]>(`/esami-generati${materia ? `?materia=${materia}` : ''}`),
+  simulazioni: (materia?: string) => req<Simulazione[]>(`/simulazioni${materia ? `?materia=${materia}` : ''}`),
+  contenuto: (materia: string, sezione: 'lezioni' | 'concetti' | 'sintesi' | 'esami-estratti' | 'esami-generati' | 'simulazioni', file: string) =>
     req<{ frontmatter: Record<string, string>; corpo: string }>(
       `/contenuto?materia=${materia}&sezione=${sezione}&file=${encodeURIComponent(file)}`
     ),
