@@ -22,6 +22,8 @@ const STATI = ['queue', 'running', 'done', 'failed'];
 // l'escaping dello shell basti da solo (vedi CLAUDE.md, nota di sicurezza).
 const RE_SLUG = /^[a-z0-9-]+$/;
 const RE_DATA = /^\d{4}-\d{2}-\d{2}$/;
+const RE_SETTIMANA = /^\d{4}-W\d{2}$/;
+const RE_MESE = /^\d{4}-\d{2}$/;
 
 function validaMateria(materia) {
   if (!RE_SLUG.test(materia || '') || !vault.listMaterie().includes(materia)) {
@@ -43,6 +45,21 @@ function validaArgomento(argomento) {
   return argomento;
 }
 
+function validaTipoPeriodo(tipo) {
+  if (tipo !== 'settimana' && tipo !== 'mese') throw new Error(`tipo periodo non valido: ${tipo}`);
+  return tipo;
+}
+
+// periodo è opzionale: se assente, la skill usa la settimana/mese corrente.
+function validaPeriodo(tipo, periodo) {
+  if (periodo === undefined || periodo === null || periodo === '') return null;
+  const re = tipo === 'settimana' ? RE_SETTIMANA : RE_MESE;
+  if (!re.test(periodo)) {
+    throw new Error(`periodo non valido per "${tipo}": ${periodo} (atteso ${tipo === 'settimana' ? 'AAAA-Www' : 'AAAA-MM'})`);
+  }
+  return periodo;
+}
+
 function ensureDirs() {
   for (const s of STATI) fs.mkdirSync(path.join(JOBS_DIR, s), { recursive: true });
 }
@@ -58,6 +75,12 @@ const SKILL_COMANDI = {
     const materia = validaMateria(args.materia);
     const argomento = validaArgomento(args.argomento);
     return `/genera-flashcard ${materia}${argomento ? ` ${argomento}` : ''}`;
+  },
+  compatta: (args) => {
+    const materia = validaMateria(args.materia);
+    const tipo = validaTipoPeriodo(args.tipo);
+    const periodo = validaPeriodo(tipo, args.periodo);
+    return `/compatta ${materia} ${tipo}${periodo ? ` ${periodo}` : ''}`;
   },
 };
 

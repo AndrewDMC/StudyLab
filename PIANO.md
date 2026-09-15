@@ -15,7 +15,7 @@ trasformazione. Nessuna API a pagamento, nessun dato fuori dal PC.
 | Web app: Dashboard, Active Recall, Concetti | `app/src/pages/` | ✅ |
 | Web app: Materiali (upload, viewer Markdown, trigger skill) | `app/src/pages/Materiali.tsx` | ✅ |
 | Coda job + worker (`node cli/worker.js`) | `cli/lib/jobs.js`, `cli/worker.js` | ✅ (uso locale; il container di §8 resta da fare) |
-| Skill `/compatta` | — | ⬜ prossimo punto |
+| Skill `/compatta` | `.claude/skills/compatta/` | ✅ |
 | `/estrai-esami`, `/simula-esame`, `/correggi` | — | ⬜ |
 | Statistiche avanzate in dashboard (heatmap, countdown) | — | ⬜ |
 | Deploy sul server Ubuntu (Docker, Tailscale) | — | ⬜ |
@@ -207,6 +207,25 @@ Legge lezioni e concetti del periodo e produce in `03-sintesi/`:
 La compattazione mensile ricompatta le settimanali, non le lezioni: struttura
 ad albero, altrimenti a fine semestre hai un documento illeggibile.
 
+**Implementata** in [.claude/skills/compatta/SKILL.md](.claude/skills/compatta/SKILL.md),
+accodabile dalla dashboard (Materiali → Azioni) tramite la coda job di §8.
+Il campo `confidenza` delle note-concetto resta a 0 finché non esiste un
+meccanismo che lo aggiorna dal ripasso reale (Fase 6/7): la sezione "nodi
+deboli" lo segnala esplicitamente invece di far finta che 0 significhi
+"non capito" — per ora è solo "non ancora misurato".
+
+⚠️ **Insidia trovata nel collegare la skill al pulsante della dashboard:**
+il conteggio "N settimane senza sintesi" e il bottone che le compatta
+devono restare sincronizzati sulla *stessa* settimana. Se il bottone
+accoda `/compatta <materia> settimana` senza specificare il periodo, la
+skill compatta la settimana **corrente** per definizione — sbagliata se il
+materiale scoperto è di settimane passate (capitato subito nel test reale,
+con una lezione datata 2024 e la settimana corrente 2026-W38, vuota). Il
+server calcola la settimana scoperta più vecchia (`prossima`, via
+`cli/lib/date.js`, algoritmo ISO 8601 standard) e il bottone la passa
+esplicitamente come argomento — mai lasciare che "nessun periodo" nella UI
+significhi implicitamente "adesso" quando il dato reale può essere passato.
+
 ### Fase 5 — Testing
 
 Due modalità, perché i tuoi due esami sono diversi.
@@ -329,7 +348,7 @@ mai copie locali sincronizzate.
 | 2 | ✅ `/genera-flashcard` + formato carte | 1 sera | Sì, ripassando a mano |
 | 3 | ✅ Motore SRS + CLI di ripasso minimale | 2-3 sere | **Sì**: sistema base completo |
 | 4 | ✅ Web app: Dashboard hub, Active Recall, Concetti, **Materiali** (upload, viewer Markdown, trigger skill via coda job) | 3-5 sere | Esperienza vera |
-| 5 | `/compatta` settimanale e mensile | 1 sera | Da fine primo mese |
+| 5 | ✅ `/compatta` settimanale e mensile | 1 sera | Da fine primo mese |
 | 6 | `/estrai-esami` + `/simula-esame` + `/correggi` | 2-3 sere | Sotto sessione |
 | 7 | Statistiche avanzate (heatmap, countdown esame) | 2 sere | Nice to have — dashboard base già in Fase 4 |
 | 8 | 🟡 Deploy su home server + accesso remoto (§8) — **la coda job + worker sono già implementati e usabili in locale**; resta da fare solo il container Docker + Tailscale sul server Ubuntu | 1-2 sere | Sì, da tutti i dispositivi |

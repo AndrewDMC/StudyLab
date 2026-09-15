@@ -186,6 +186,24 @@ function listLezioni(materiaFiltro) {
   return out;
 }
 
+// Elenco delle sintesi (frontmatter di 03-sintesi/*.md), più recenti prima
+// — per il viewer "Materiali" e per sapere se esiste già una settimanale
+// prima di generare la mensile corrispondente (vedi skill /compatta).
+function listSintesi(materiaFiltro) {
+  const out = [];
+  for (const slug of materiaFiltro ? [materiaFiltro] : listMaterie()) {
+    const dir = path.join(MATERIE_DIR, slug, '03-sintesi');
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.md')) continue;
+      const fm = readFrontmatter(path.join(dir, f));
+      out.push({ materia: slug, file: f, tipo: fm.tipo || '', periodo: fm.periodo || '', generato: fm.generato || null });
+    }
+  }
+  out.sort((a, b) => (b.periodo || '').localeCompare(a.periodo || ''));
+  return out;
+}
+
 // Quanti elementi (foto, PDF, testo) attendono ancora /cattura in 00-inbox/,
 // escludendo _processati/ e i file di servizio come .gitkeep.
 function inboxDaProcessare(slug) {
@@ -252,6 +270,7 @@ module.exports = {
   allCards,
   listConcetti,
   listLezioni,
+  listSintesi,
   inboxDaProcessare,
   leggiContenuto,
   inboxDir,

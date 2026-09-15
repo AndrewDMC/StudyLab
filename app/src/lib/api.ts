@@ -54,6 +54,7 @@ export interface PipelineMateria {
   cattura: { daProcessare: number };
   schematizza: { daSchematizzare: number };
   flashcard: { concettiSenzaCarte: number };
+  compattazione: { settimaneSenzaSintesi: number; prossima: string | null };
   cura: { daCurare: number };
   ripasso: { dovute: number; nuove: number };
 }
@@ -70,7 +71,15 @@ export interface Lezione {
   stato: string;
 }
 
-export type SkillNome = 'cattura' | 'schematizza' | 'genera-flashcard';
+export interface Sintesi {
+  materia: string;
+  file: string;
+  tipo: string;
+  periodo: string;
+  generato: string | null;
+}
+
+export type SkillNome = 'cattura' | 'schematizza' | 'genera-flashcard' | 'compatta';
 
 export interface Job {
   id: string;
@@ -109,6 +118,7 @@ export const api = {
   concetti: (materia?: string) => req<Concetto[]>(`/concetti${materia ? `?materia=${materia}` : ''}`),
 
   lezioni: (materia?: string) => req<Lezione[]>(`/lezioni${materia ? `?materia=${materia}` : ''}`),
+  sintesi: (materia?: string) => req<Sintesi[]>(`/sintesi${materia ? `?materia=${materia}` : ''}`),
   contenuto: (materia: string, sezione: 'lezioni' | 'concetti' | 'sintesi', file: string) =>
     req<{ frontmatter: Record<string, string>; corpo: string }>(
       `/contenuto?materia=${materia}&sezione=${sezione}&file=${encodeURIComponent(file)}`

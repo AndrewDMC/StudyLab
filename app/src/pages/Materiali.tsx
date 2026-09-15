@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, Job, Lezione, MateriaStato, PipelineMateria, SkillNome } from '../lib/api';
+import { api, Job, Lezione, MateriaStato, PipelineMateria, SkillNome, Sintesi } from '../lib/api';
 import { Markdown } from '../components/Markdown';
 
 // "Sezione di inserimento" + "sezione di visualizzazione" richieste
@@ -51,10 +51,13 @@ export function Materiali() {
   );
 }
 
+type Apribile = { sezione: 'lezioni' | 'sintesi'; file: string; titolo: string };
+
 function ContenutoMateria({ materia }: { materia: string }) {
   const [pipeline, setPipeline] = useState<PipelineMateria | null>(null);
   const [lezioni, setLezioni] = useState<Lezione[] | null>(null);
-  const [aperta, setAperta] = useState<Lezione | null>(null);
+  const [sintesi, setSintesi] = useState<Sintesi[] | null>(null);
+  const [aperta, setAperta] = useState<Apribile | null>(null);
   const [contenuto, setContenuto] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState<string | null>(null);
@@ -62,6 +65,7 @@ function ContenutoMateria({ materia }: { materia: string }) {
   const ricarica = useCallback(() => {
     api.pipeline(materia).then((r) => setPipeline(r.materie[0] || null));
     api.lezioni(materia).then(setLezioni);
+    api.sintesi(materia).then(setSintesi);
   }, [materia]);
 
   useEffect(() => {
@@ -70,11 +74,11 @@ function ContenutoMateria({ materia }: { materia: string }) {
     ricarica();
   }, [materia, ricarica]);
 
-  function apri(l: Lezione) {
-    setAperta(l);
+  function apri(voce: Apribile) {
+    setAperta(voce);
     setContenuto(null);
     api
-      .contenuto(materia, 'lezioni', l.file)
+      .contenuto(materia, voce.sezione, voce.file)
       .then((r) => setContenuto(r.corpo))
       .catch((e) => setErrore(e.message));
   }
@@ -109,7 +113,10 @@ function ContenutoMateria({ materia }: { materia: string }) {
           <div className="lista-lezioni">
             {lezioni.map((l) => (
               <div key={l.file} className={aperta?.file === l.file ? 'riga-lezione attiva' : 'riga-lezione'}>
-                <button className="riga-lezione-corpo" onClick={() => apri(l)}>
+                <button
+                  className="riga-lezione-corpo"
+                  onClick={() => apri({ sezione: 'lezioni', file: l.file, titolo: l.titolo })}
+                >
                   <span className="riga-lezione-titolo">{l.titolo}</span>
                   <span className="riga-lezione-meta">
                     {l.data} · <span className={`badge-stato stato-${l.stato}`}>{l.stato}</span>
@@ -124,6 +131,31 @@ function ContenutoMateria({ materia }: { materia: string }) {
                     {inCorso === `schematizza-${l.file}` ? 'Accodo…' : 'Schematizza'}
                   </button>
                 )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="gruppo-materia">
+        <h2 className="gruppo-titolo">Sintesi</h2>
+        {!sintesi ? (
+          <p>Caricamento…</p>
+        ) : sintesi.length === 0 ? (
+          <p className="sottotitolo">Nessuna sintesi ancora. Compattala dalle Azioni qui sopra.</p>
+        ) : (
+          <div className="lista-lezioni">
+            {sintesi.map((s) => (
+              <div key={s.file} className={aperta?.file === s.file ? 'riga-lezione attiva' : 'riga-lezione'}>
+                <button
+                  className="riga-lezione-corpo"
+                  onClick={() => apri({ sezione: 'sintesi', file: s.file, titolo: `${s.tipo} · ${s.periodo}` })}
+                >
+                  <span className="riga-lezione-titolo">{s.periodo}</span>
+                  <span className="riga-lezione-meta">
+                    <span className="badge-stato">{s.tipo}</span> · generata {s.generato || '?'}
+                  </span>
+                </button>
               </div>
             ))}
           </div>
@@ -215,6 +247,19 @@ function AzioniPipeline({
           onClick={() => accoda('genera-flashcard', { materia }, 'flashcard')}
         >
           {inCorso === 'flashcard' ? 'Accodo…' : `Genera flashcard (${pipeline.flashcard.concettiSenzaCarte} concetti scoperti)`}
+        </button>
+        <button
+          className="chip-azione"
+          disabled={!pipeline.compattazione.prossima || inCorso === 'compatta'}
+          onClick={() =>
+            pipeline.compattazione.prossima &&
+            accoda('compatta', { materia, tipo: 'settimana', periodo: pipeline.compattazione.prossima }, 'compatta')
+          }
+          title={pipeline.compattazione.prossima ? `Compatta ${pipeline.compattazione.prossima}` : undefined}
+        >
+          {inCorso === 'compatta'
+            ? 'Accodo…'
+            : `Compatta (${pipeline.compattazione.settimaneSenzaSintesi} settimane senza sintesi)`}
         </button>
       </div>
       <p className="nota">

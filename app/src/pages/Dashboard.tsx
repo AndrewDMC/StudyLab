@@ -91,16 +91,16 @@ export function Dashboard() {
   );
 }
 
-// Striscia delle 6 fasi dello studio (PIANO.md §2): le prime tre sono
-// guidate da skill Claude Code (cattura, schematizza) o già interattive
-// nella web app (flashcard/cura/ripasso); compattazione ed esami sono
-// segnaposto — la fase esiste nel piano ma non ha ancora un'interfaccia,
-// e va detto chiaramente invece di nasconderla.
+// Striscia delle fasi dello studio (PIANO.md §2): le prime quattro sono
+// tutte azionabili da Materiali (via coda job); Esami resta un segnaposto
+// — la fase esiste nel piano ma non ha ancora un motore (Fase 6, dipende
+// da /estrai-esami), e va detto chiaramente invece di nasconderla.
 function PipelineStrip({ slug, p }: { slug: string; p: PipelineMateria }) {
   const fasi: { label: string; count: number; nota?: string }[] = [
     { label: 'Cattura', count: p.cattura.daProcessare, nota: 'clicca per caricare o lanciare /cattura' },
     { label: 'Schematizza', count: p.schematizza.daSchematizzare, nota: 'clicca per schematizzare le lezioni grezze' },
     { label: 'Flashcard', count: p.flashcard.concettiSenzaCarte, nota: 'concetti senza carte — clicca per generarle' },
+    { label: 'Compattazione', count: p.compattazione.settimaneSenzaSintesi, nota: 'settimane senza sintesi — clicca per compattarle' },
   ];
   return (
     <div className="pipeline-strip">
@@ -115,10 +115,6 @@ function PipelineStrip({ slug, p }: { slug: string; p: PipelineMateria }) {
           <span className="pipeline-label">{f.label}</span>
         </Link>
       ))}
-      <div className="pipeline-fase pipeline-futura" title="Fase 5 del piano, non ancora implementata">
-        <span className="pipeline-numero">—</span>
-        <span className="pipeline-label">Compattazione</span>
-      </div>
       <div className="pipeline-fase pipeline-futura" title="Fase 6 del piano, non ancora implementata">
         <span className="pipeline-numero">—</span>
         <span className="pipeline-label">Esami</span>

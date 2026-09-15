@@ -103,6 +103,22 @@ WAR = dipendenza di nome, eliminabile con register renaming.
 - `<!-- stato: proposta -->` finché l'utente non cura il mazzo; solo allora
   diventa `attiva` ed entra nella rotazione dell'app di ripasso.
 
+## Formato delle sintesi (`03-sintesi/*.md`)
+
+```yaml
+---
+materia: matematica
+tipo: settimanale        # settimanale | mensile
+periodo: 2026-W38         # ISO 8601 (settimana) o AAAA-MM (mese)
+concetti: [C-MAT-0001, C-MAT-0002]   # tutti quelli coperti dalla sintesi
+generato: 2026-09-20       # data di generazione, non del periodo
+---
+```
+
+Nome file: `settimana-AAAA-Www.md` o `mensile-AAAA-MM.md`. La mensile legge
+le settimanali già esistenti del mese, mai le lezioni direttamente (vedi
+skill `/compatta` e PIANO.md §2).
+
 ## Convenzioni di naming
 
 - Lezioni: `AAAA-MM-GG-slug-argomento.md`
@@ -120,6 +136,10 @@ WAR = dipendenza di nome, eliminabile con register renaming.
 - `/genera-flashcard <materia> [argomento|ID]` — genera carte di active
   recall dai concetti `attivo` non ancora coperti, in `stato: proposta` in
   attesa di curazione. Non generare mai per concetti `stato: bozza`.
+- `/compatta <materia> settimana|mese [periodo]` — ricompatta lezioni (per
+  la settimanale) o sintesi settimanali già esistenti (per la mensile, mai
+  le lezioni direttamente) in `03-sintesi/`, con mappa concetti, schema
+  ~2 pagine, nodi deboli e domande di collegamento trasversale.
 - `/digitalizza-schema` — (Fase 9, non ancora implementata) converte uno
   schema disegnato a mano in outline Markdown + Mermaid.
 

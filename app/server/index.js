@@ -13,6 +13,7 @@ const multer = require('multer');
 const vault = require('../../cli/lib/vault');
 const srs = require('../../cli/lib/srs');
 const jobs = require('../../cli/lib/jobs');
+const { isoWeek } = require('../../cli/lib/date');
 const { costruisciSessione, capPerMateria } = require('../../cli/lib/session');
 
 // memoryStorage, non diskStorage: con multipart, i campi di testo (qui
@@ -165,6 +166,16 @@ app.get('/api/pipeline', (req, res) => {
     const attiva = carte.filter((c) => c.stato === 'attiva');
     const lezioni = vault.listLezioni(slug);
     const concetti = vault.listConcetti(slug);
+    const sintesi = vault.listSintesi(slug);
+
+    // Settimane con almeno una lezione schematizzata che non hanno ancora
+    // una sintesi settimanale corrispondente — è il "da fare" reale della
+    // Fase 5, non solo un segnaposto.
+    const settimaneConLezioni = new Set(
+      lezioni.filter((l) => l.data && l.stato === 'schematizzato').map((l) => isoWeek(l.data))
+    );
+    const settimaneConSintesi = new Set(sintesi.filter((s) => s.tipo === 'settimanale').map((s) => s.periodo));
+    const elencoSettimaneScoperte = [...settimaneConLezioni].filter((w) => !settimaneConSintesi.has(w)).sort();
 
     return {
       slug,
@@ -174,6 +185,12 @@ app.get('/api/pipeline', (req, res) => {
       flashcard: {
         concettiSenzaCarte: concetti.filter((c) => c.stato === 'attivo' && !concettiConCarta.has(c.id)).length,
       },
+      // `prossima` è la settimana scoperta più vecchia: il pulsante
+      // "Compatta" in Materiali la passa esplicitamente come periodo,
+      // altrimenti senza argomento la skill compatterebbe la settimana
+      // *corrente* — sbagliata se il materiale scoperto è di settimane
+      // passate (vedi test con lezione datata 2024).
+      compattazione: { settimaneSenzaSintesi: elencoSettimaneScoperte.length, prossima: elencoSettimaneScoperte[0] || null },
       cura: { daCurare: carte.filter((c) => c.stato === 'proposta').length },
       ripasso: {
         dovute: attiva.filter((c) => state.carte[c.srsId] && state.carte[c.srsId].due <= t).length,
@@ -188,6 +205,11 @@ app.get('/api/pipeline', (req, res) => {
 // GET /api/lezioni?materia=slug — elenco lezioni (per il viewer "Materiali").
 app.get('/api/lezioni', (req, res) => {
   res.json(vault.listLezioni(req.query.materia || null));
+});
+
+// GET /api/sintesi?materia=slug — elenco sintesi settimanali/mensili (Fase 5).
+app.get('/api/sintesi', (req, res) => {
+  res.json(vault.listSintesi(req.query.materia || null));
 });
 
 // GET /api/contenuto?materia=slug&sezione=lezioni|concetti|sintesi&file=nome.md
