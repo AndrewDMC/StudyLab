@@ -1,0 +1,25 @@
+# Materiale sorgente voluminoso: slide, PDF, registrazioni.
+# Backup separato (rsync), non versionato in git.
+risorse/
+
+# Temi d'esame originali (PDF/scan): binari, di sola lettura.
+# Restano sul filesystem del server, non in git (backup a parte, §8/§6).
+materie/*/05-esami/originali/*
+!materie/*/05-esami/originali/.gitkeep
+
+# Cattura grezza in attesa di processamento: può contenere foto pesanti.
+materie/*/00-inbox/*
+!materie/*/00-inbox/.gitkeep
+
+# Coda dei job (worker/dashboard, Fase 8) — stato runtime, non contenuto.
+vault/_jobs/
+_jobs/
+
+# Dipendenze e build della web app (Fase 4)
+app/node_modules/
+app/dist/
+worker/node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db

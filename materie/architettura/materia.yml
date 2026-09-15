@@ -1,0 +1,13 @@
+nome: Architettura degli Elaboratori
+slug: architettura
+prefisso_id: ARCH        # usato per gli ID dei concetti: C-ARCH-NNNN
+docente: ""               # da compilare
+tipo_esame: scritto        # orale | scritto | misto
+struttura_esame: |
+  Due parti (prima parte + seconda parte), come da materiale in
+  05-esami/originali/ (cartelle "anni-precedenti" e "secondo-parziale").
+data_esame: null           # AAAA-MM-GG, da compilare quando nota
+prossimo_ultimo_id: 0      # ultimo ID concetto assegnato; la skill lo incrementa
+note: |
+  Materiale storico d'esame già presente in 05-esami/originali/, importato
+  da ~/Documents/UNI/Architettura. Da usare come base per /estrai-esami.

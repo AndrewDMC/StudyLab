@@ -1,0 +1,13 @@
+nome: Matematica
+slug: matematica
+prefisso_id: MAT          # usato per gli ID dei concetti: C-MAT-NNNN
+docente: ""                # da compilare
+tipo_esame: misto           # orale | scritto | misto
+struttura_esame: ""
+data_esame: null            # AAAA-MM-GG, da compilare quando nota
+prossimo_ultimo_id: 5       # ultimo ID concetto assegnato; la skill lo incrementa
+note: |
+  Slide delle lezioni (PPTX/PDF) in risorse/matematica/lezioni/, importate da
+  ~/Documents/UNI/Matematica/Lezioni. Sono materiale sorgente voluminoso,
+  non appunti: non entrano in git (vedi .gitignore) e non vanno processate
+  automaticamente — vanno passate esplicitamente a /cattura quando serve.
