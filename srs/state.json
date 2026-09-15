@@ -1,5 +1,66 @@
 {
   "versione": 1,
   "algoritmo": "sm2",
-  "carte": {}
+  "carte": {
+    "4ae731": {
+      "materia": "matematica",
+      "concetto": "C-MAT-0002",
+      "interval": 1,
+      "ease": 2.5,
+      "reps": 1,
+      "lapses": 0,
+      "due": "2026-09-16",
+      "ultima_revisione": "2026-09-15"
+    },
+    "8cecba": {
+      "materia": "matematica",
+      "concetto": "C-MAT-0004",
+      "interval": 1,
+      "ease": 2.5,
+      "reps": 1,
+      "lapses": 0,
+      "due": "2026-09-16",
+      "ultima_revisione": "2026-09-15"
+    },
+    "d9544a": {
+      "materia": "matematica",
+      "concetto": "C-MAT-0004",
+      "interval": 1,
+      "ease": 2.3,
+      "reps": 0,
+      "lapses": 1,
+      "due": "2026-09-16",
+      "ultima_revisione": "2026-09-15"
+    },
+    "f7d160": {
+      "materia": "matematica",
+      "concetto": "C-MAT-0003",
+      "interval": 4,
+      "ease": 2.65,
+      "reps": 1,
+      "lapses": 0,
+      "due": "2026-09-19",
+      "ultima_revisione": "2026-09-15"
+    },
+    "2f5202": {
+      "materia": "matematica",
+      "concetto": "C-MAT-0001",
+      "interval": 1,
+      "ease": 2.5,
+      "reps": 1,
+      "lapses": 0,
+      "due": "2026-09-16",
+      "ultima_revisione": "2026-09-15"
+    },
+    "ff1f3d": {
+      "materia": "matematica",
+      "concetto": "C-MAT-0001",
+      "interval": 1,
+      "ease": 2.5,
+      "reps": 1,
+      "lapses": 0,
+      "due": "2026-09-16",
+      "ultima_revisione": "2026-09-15"
+    }
+  }
 }

@@ -6,6 +6,7 @@ tipo_esame: misto           # orale | scritto | misto
 struttura_esame: ""
 data_esame: null            # AAAA-MM-GG, da compilare quando nota
 prossimo_ultimo_id: 5       # ultimo ID concetto assegnato; la skill lo incrementa
+carte_nuove_al_giorno: 15   # cap SRS, vedi PIANO.md §3
 note: |
   Slide delle lezioni (PPTX/PDF) in risorse/matematica/lezioni/, importate da
   ~/Documents/UNI/Matematica/Lezioni. Sono materiale sorgente voluminoso,

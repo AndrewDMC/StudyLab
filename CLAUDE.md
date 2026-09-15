@@ -126,3 +126,19 @@ WAR = dipendenza di nome, eliminabile con register renaming.
 Quando in dubbio su un formato o una regola non coperta qui, **fermati e
 chiedi** invece di improvvisare una convenzione: questo file va aggiornato,
 non aggirato.
+
+## CLI di ripasso (`cli/ripassa.js`)
+
+Non è una skill: è codice deterministico (motore SM-2), senza AI, pensato
+per funzionare anche a Claude spento (vedi principio in PIANO.md §0). Non
+va invocata dalle skill — è per l'utente, da terminale:
+
+```
+node cli/ripassa.js stato              # riepilogo per materia, nessuna interazione
+node cli/ripassa.js cura [materia]     # approva/scarta le carte "proposta"
+node cli/ripassa.js studia [materia]   # sessione di ripasso, interleaved tra materie
+```
+
+Legge/scrive `srs/state.json` (unico stato mutabile) e `04-flashcard/*.md`
+(per cambiare `stato` da `proposta`/`attiva` a `sospesa`, o rimuovere una
+carta scartata in curazione). Non tocca mai `02-concetti/` né `01-lezioni/`.

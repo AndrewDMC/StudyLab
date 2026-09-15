@@ -225,6 +225,21 @@ Questo **non** lo fa l'AI: è un algoritmo deterministico, circa 200 righe.
 - Cap giornaliero di carte nuove (es. 15 per materia), altrimenti dopo tre
   settimane hai 400 ripassi arretrati e molli.
 
+**Implementato** in `cli/ripassa.js` + `cli/lib/srs.js`: SM-2 a grana
+giornaliera (variante Again/Hard/Good/Easy, come Anki), zero dipendenze
+esterne. Tre comandi: `stato`, `cura`, `studia` — vedi CLAUDE.md per l'uso.
+È già uno strumento di ripasso completo e utilizzabile da terminale, prima
+ancora che esista la web app (Fase 4/8).
+
+⚠️ **Insidia reale incontrata nell'implementazione, da non ripetere nella web
+app:** calcolare la data di scadenza con `new Date(...).toISOString()`
+sbaglia di un giorno con fuso orario positivo (es. CEST, UTC+2) — la
+mezzanotte locale corrisponde alle 22:00 UTC del giorno *precedente*, quindi
+`toISOString().slice(0,10)` riporta indietro la data. Va usata aritmetica
+sui componenti data locali (`getFullYear`/`getMonth`/`getDate`), mai un
+giro per UTC, per qualsiasi calcolo di date a grana giornaliera — vale anche
+per il countdown esame e per `/compatta settimana|mese`.
+
 ---
 
 ## 4. L'interfaccia

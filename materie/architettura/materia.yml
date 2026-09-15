@@ -8,6 +8,7 @@ struttura_esame: |
   05-esami/originali/ (cartelle "anni-precedenti" e "secondo-parziale").
 data_esame: null           # AAAA-MM-GG, da compilare quando nota
 prossimo_ultimo_id: 0      # ultimo ID concetto assegnato; la skill lo incrementa
+carte_nuove_al_giorno: 15   # cap SRS, vedi PIANO.md §3
 note: |
   Materiale storico d'esame già presente in 05-esami/originali/, importato
   da ~/Documents/UNI/Architettura. Da usare come base per /estrai-esami.
