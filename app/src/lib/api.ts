@@ -6,6 +6,7 @@ export interface MateriaStato {
   nome: string;
   tipo_esame: string | null;
   data_esame: string | null;
+  giorniAllEsame: number | null;
   attive: number;
   dovute: number;
   nuove: number;
@@ -54,6 +55,7 @@ export interface PipelineMateria {
   cattura: { daProcessare: number };
   schematizza: { daSchematizzare: number };
   flashcard: { concettiSenzaCarte: number };
+  heatmapConfidenza: { id: string; titolo: string; confidenza: number }[];
   compattazione: { settimaneSenzaSintesi: number; prossima: string | null };
   esami: { daEstrarre: number; estratti: number; daCorreggere: number };
   cura: { daCurare: number };

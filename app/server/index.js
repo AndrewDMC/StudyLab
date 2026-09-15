@@ -13,7 +13,7 @@ const multer = require('multer');
 const vault = require('../../cli/lib/vault');
 const srs = require('../../cli/lib/srs');
 const jobs = require('../../cli/lib/jobs');
-const { isoWeek } = require('../../cli/lib/date');
+const { isoWeek, giorniTra } = require('../../cli/lib/date');
 const { costruisciSessione, capPerMateria } = require('../../cli/lib/session');
 
 // memoryStorage, non diskStorage: con multipart, i campi di testo (qui
@@ -41,6 +41,9 @@ function materiaInfoPubblica(slug) {
     nome: info.nome || slug,
     tipo_esame: info.tipo_esame || null,
     data_esame: info.data_esame || null,
+    // null se data_esame non è ancora compilata in materia.yml — il
+    // countdown in dashboard resta nascosto finché non lo è (Fase 7).
+    giorniAllEsame: info.data_esame ? giorniTra(srs.today(), info.data_esame) : null,
   };
 }
 
@@ -199,6 +202,13 @@ app.get('/api/pipeline', (req, res) => {
       flashcard: {
         concettiSenzaCarte: concetti.filter((c) => c.stato === 'attivo' && !concettiConCarta.has(c.id)).length,
       },
+      // Heatmap confidenza (Fase 7): solo concetti `attivo` — una `bozza`
+      // non è ancora stata testata per definizione, non ha senso mostrarla
+      // come "punto debole". confidenza resta a 0 finché /correggi non
+      // l'ha misurata almeno una volta (vedi CLAUDE.md).
+      heatmapConfidenza: concetti
+        .filter((c) => c.stato === 'attivo')
+        .map((c) => ({ id: c.id, titolo: c.titolo, confidenza: c.confidenza })),
       // `prossima` è la settimana scoperta più vecchia: il pulsante
       // "Compatta" in Materiali la passa esplicitamente come periodo,
       // altrimenti senza argomento la skill compatterebbe la settimana

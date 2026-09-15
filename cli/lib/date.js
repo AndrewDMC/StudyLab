@@ -30,4 +30,16 @@ function meseCorrente() {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
 }
 
-module.exports = { isoWeek, settimanaCorrente, meseCorrente };
+// Giorni interi da dataDa a dataA (negativo se dataA è nel passato).
+// Componenti di data locali su entrambi i lati, mai un giro per UTC/
+// toISOString — stessa cautela sui fusi orari di cli/lib/srs.js (vedi
+// PIANO.md §3): usata per il countdown esame in dashboard.
+function giorniTra(dataDa, dataA) {
+  const [y1, m1, d1] = dataDa.split('-').map(Number);
+  const [y2, m2, d2] = dataA.split('-').map(Number);
+  const t1 = new Date(y1, m1 - 1, d1).getTime();
+  const t2 = new Date(y2, m2 - 1, d2).getTime();
+  return Math.round((t2 - t1) / 86400000);
+}
+
+module.exports = { isoWeek, settimanaCorrente, meseCorrente, giorniTra };

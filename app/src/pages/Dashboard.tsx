@@ -58,10 +58,11 @@ export function Dashboard() {
             <div key={m.slug} className="scheda-materia">
               <div className="scheda-materia-intestazione">
                 <h2>{m.nome}</h2>
-                {m.data_esame && <span className="countdown">Esame: {m.data_esame}</span>}
+                {m.data_esame && m.giorniAllEsame !== null && <Countdown data={m.data_esame} giorni={m.giorniAllEsame} />}
               </div>
 
               {p && <PipelineStrip slug={m.slug} p={p} />}
+              {p && <HeatmapConfidenza slug={m.slug} concetti={p.heatmapConfidenza} />}
 
               <div className="scheda-materia-azioni">
                 <Link className="chip-azione" to={`/materiali?materia=${m.slug}`}>
@@ -124,5 +125,36 @@ function PipelineStrip({ slug, p }: { slug: string; p: PipelineMateria }) {
         </Link>
       ))}
     </div>
+  );
+}
+
+// Countdown esame (Fase 7): giorni interi calcolati lato server con
+// aritmetica su componenti data locali (cli/lib/date.js, giorniTra) — mai
+// un giro per UTC/toISOString, vedi l'insidia già presa a Fase 3
+// (PIANO.md §3) per qualunque calcolo di date a grana giornaliera.
+function Countdown({ data, giorni }: { data: string; giorni: number }) {
+  const urgenza = giorni < 0 ? '' : giorni <= 7 ? 'countdown-urgente' : giorni <= 30 ? 'countdown-vicino' : '';
+  const testo = giorni < 0 ? `Esame passato da ${-giorni}g` : giorni === 0 ? 'Esame oggi' : `Esame tra ${giorni}g`;
+  return (
+    <span className={`countdown ${urgenza}`} title={data}>
+      {testo}
+    </span>
+  );
+}
+
+// Heatmap confidenza (Fase 7): un quadratino per concetto `attivo`,
+// colorato per fascia di confidenza — scansione visiva rapida dei punti
+// deboli, senza dover aprire Concetti. Grigio = mai testato (confidenza
+// resta a 0 finché /correggi non l'ha misurata almeno una volta, vedi
+// CLAUDE.md) — non è "non capito", solo "non ancora misurato", stessa
+// distinzione fatta in /compatta per i nodi deboli.
+function HeatmapConfidenza({ slug, concetti }: { slug: string; concetti: { id: string; titolo: string; confidenza: number }[] }) {
+  if (concetti.length === 0) return null;
+  return (
+    <Link to={`/concetti?materia=${slug}`} className="heatmap-confidenza" title="Confidenza dei concetti — clicca per esplorarli">
+      {concetti.map((c) => (
+        <span key={c.id} className={`heatmap-cella confidenza-${c.confidenza}`} title={`${c.titolo} — confidenza ${c.confidenza}/5`} />
+      ))}
+    </Link>
   );
 }

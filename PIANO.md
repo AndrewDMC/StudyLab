@@ -17,7 +17,7 @@ trasformazione. Nessuna API a pagamento, nessun dato fuori dal PC.
 | Coda job + worker (`node cli/worker.js`) | `cli/lib/jobs.js`, `cli/worker.js` | ✅ (uso locale; il container di §8 resta da fare) |
 | Skill `/compatta` | `.claude/skills/compatta/` | ✅ |
 | Skill `/estrai-esami`, `/simula-esame`, `/correggi` | `.claude/skills/` | ✅ |
-| Statistiche avanzate in dashboard (heatmap, countdown) | — | ⬜ |
+| Statistiche avanzate in dashboard (heatmap confidenza, countdown esame) | `app/src/pages/Dashboard.tsx` | ✅ |
 | Deploy sul server Ubuntu (Docker, Tailscale) | — | ⬜ |
 | Editor/digitalizzazione schemi | — | ⬜ |
 
@@ -294,9 +294,10 @@ per il countdown esame e per `/compatta settimana|mese`.
 Schermate in ordine di priorità:
 
 1. **Dashboard** — hub: pipeline strip per materia (cattura, schematizza,
-   flashcard, compattazione, esami), scorciatoie dirette.
-   **Implementata** (countdown esame e heatmap confidenza restano da fare:
-   bastano `nome`/`data_esame` in `materia.yml` quando popolati).
+   flashcard, compattazione, esami), countdown esame (giorni interi,
+   colorato per urgenza) e heatmap confidenza (un quadratino per concetto
+   `attivo`, grigio finché `/correggi` non l'ha misurato almeno una
+   volta), scorciatoie dirette. **Implementata.**
 2. **Materiali** — upload in `00-inbox/`, viewer Markdown delle lezioni
    (con KaTeX), pulsanti che accodano `/cattura`, `/schematizza`,
    `/genera-flashcard` per il worker. **Implementata** — non era nello
@@ -354,7 +355,7 @@ mai copie locali sincronizzate.
 | 4 | ✅ Web app: Dashboard hub, Active Recall, Concetti, **Materiali** (upload, viewer Markdown, trigger skill via coda job) | 3-5 sere | Esperienza vera |
 | 5 | ✅ `/compatta` settimanale e mensile | 1 sera | Da fine primo mese |
 | 6 | ✅ `/estrai-esami` + `/simula-esame` + `/correggi`, integrate in dashboard e coda job | 2-3 sere | Sotto sessione |
-| 7 | Statistiche avanzate (heatmap, countdown esame) | 2 sere | Nice to have — dashboard base già in Fase 4 |
+| 7 | ✅ Statistiche avanzate (heatmap confidenza, countdown esame) | 2 sere | Nice to have — dashboard base già in Fase 4 |
 | 8 | 🟡 Deploy su home server + accesso remoto (§8) — **la coda job + worker sono già implementati e usabili in locale**; resta da fare solo il container Docker + Tailscale sul server Ubuntu | 1-2 sere | Sì, da tutti i dispositivi |
 | 9 | Editor di schemi e digitalizzazione (§9) | 3-4 sere | Chiude il ciclo |
 

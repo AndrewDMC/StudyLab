@@ -113,6 +113,8 @@ h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
 .scheda-materia-intestazione { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; }
 .scheda-materia h2 { margin: 0; font-size: 1.05rem; }
 .scheda-materia .countdown { font-size: 0.78rem; color: var(--testo-debole); white-space: nowrap; }
+.scheda-materia .countdown.countdown-vicino { color: var(--arancio); font-weight: 600; }
+.scheda-materia .countdown.countdown-urgente { color: var(--rosso); font-weight: 600; }
 
 .pipeline-strip {
   display: grid;
@@ -135,7 +137,24 @@ h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
 .pipeline-numero { font-weight: 700; font-size: 0.95rem; }
 .pipeline-label { font-size: 0.62rem; color: var(--testo-debole); text-transform: uppercase; letter-spacing: 0.02em; margin-top: 0.1rem; }
 .pipeline-fase.attenzione .pipeline-numero { color: var(--arancio); }
-.pipeline-fase.pipeline-futura { opacity: 0.45; }
+
+.heatmap-confidenza {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--bordo);
+}
+.heatmap-cella { width: 10px; height: 10px; border-radius: 2px; background: var(--bordo); }
+.heatmap-cella.confidenza-0 { background: var(--bordo); }
+.heatmap-cella.confidenza-1 { background: var(--rosso); opacity: 0.55; }
+.heatmap-cella.confidenza-2 { background: var(--rosso); }
+.heatmap-cella.confidenza-3 { background: var(--giallo); }
+.heatmap-cella.confidenza-4 { background: var(--verde); opacity: 0.7; }
+.heatmap-cella.confidenza-5 { background: var(--verde); }
 
 .scheda-materia-azioni { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
