@@ -62,6 +62,28 @@ export interface PipelineResponse {
   materie: PipelineMateria[];
 }
 
+export interface Lezione {
+  materia: string;
+  file: string;
+  titolo: string;
+  data: string | null;
+  stato: string;
+}
+
+export type SkillNome = 'cattura' | 'schematizza' | 'genera-flashcard';
+
+export interface Job {
+  id: string;
+  skill: SkillNome;
+  args: Record<string, string>;
+  stato: 'queue' | 'running' | 'done' | 'failed';
+  creato: string;
+  iniziato?: string;
+  finito?: string;
+  output?: string;
+  errore?: string;
+}
+
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -85,4 +107,26 @@ export const api = {
   cura: (srsId: string, azione: 'approva' | 'scarta') =>
     req('/cura', { method: 'POST', body: JSON.stringify({ srsId, azione }) }),
   concetti: (materia?: string) => req<Concetto[]>(`/concetti${materia ? `?materia=${materia}` : ''}`),
+
+  lezioni: (materia?: string) => req<Lezione[]>(`/lezioni${materia ? `?materia=${materia}` : ''}`),
+  contenuto: (materia: string, sezione: 'lezioni' | 'concetti' | 'sintesi', file: string) =>
+    req<{ frontmatter: Record<string, string>; corpo: string }>(
+      `/contenuto?materia=${materia}&sezione=${sezione}&file=${encodeURIComponent(file)}`
+    ),
+
+  upload: async (materia: string, files: FileList) => {
+    const form = new FormData();
+    form.append('materia', materia);
+    for (const f of files) form.append('file', f);
+    const res = await fetch('/api/upload', { method: 'POST', body: form });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.errore || `Errore ${res.status} su /upload`);
+    }
+    return res.json() as Promise<{ ok: true; salvati: string[] }>;
+  },
+
+  jobs: () => req<Job[]>('/jobs'),
+  accodaJob: (skill: SkillNome, args: Record<string, string>) =>
+    req<Job>('/job', { method: 'POST', body: JSON.stringify({ skill, args }) }),
 };

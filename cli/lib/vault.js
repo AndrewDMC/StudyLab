@@ -121,11 +121,15 @@ function deleteCard(srsId) {
 
 // Frontmatter di un file .md qualunque (lezione, concetto...): stessa
 // sintassi piatta di materia.yml, letta con lo stesso parser di riga.
-function readFrontmatter(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
+// Separa il blocco frontmatter (--- ... ---) dal corpo di un file .md.
+// Usata sia per leggere solo i metadati (readFrontmatter) sia per il
+// viewer, dove il corpo va renderizzato con un parser Markdown vero: senza
+// separarlo prima, il `---` del frontmatter viene letto come hr/setext
+// heading dal parser e ne corrompe il rendering.
+function separaFrontmatter(content) {
+  const blocco = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (!blocco) return { fm: {}, corpo: content };
   const fm = {};
-  const blocco = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!blocco) return fm;
   for (const line of blocco[1].split(/\r?\n/)) {
     const m = line.match(/^([a-z_]+):\s*(.*)$/);
     if (!m) continue;
@@ -133,7 +137,11 @@ function readFrontmatter(filePath) {
     val = val.trim().replace(/^"(.*)"$/, '$1').replace(/^\[|\]$/g, '');
     fm[key] = val;
   }
-  return fm;
+  return { fm, corpo: blocco[2] };
+}
+
+function readFrontmatter(filePath) {
+  return separaFrontmatter(fs.readFileSync(filePath, 'utf8')).fm;
 }
 
 // Elenco dei concetti (frontmatter di 02-concetti/*.md), per materia o per
@@ -149,6 +157,7 @@ function listConcetti(materiaFiltro) {
       const fm = readFrontmatter(path.join(dir, f));
       out.push({
         materia: slug,
+        file: f,
         id: fm.id,
         titolo: fm.titolo || '',
         tipo: fm.tipo || '',
@@ -171,7 +180,7 @@ function listLezioni(materiaFiltro) {
     for (const f of fs.readdirSync(dir)) {
       if (!f.endsWith('.md')) continue;
       const fm = readFrontmatter(path.join(dir, f));
-      out.push({ materia: slug, titolo: fm.titolo || f, data: fm.data || null, stato: fm.stato || 'grezzo' });
+      out.push({ materia: slug, file: f, titolo: fm.titolo || f, data: fm.data || null, stato: fm.stato || 'grezzo' });
     }
   }
   return out;
@@ -183,6 +192,35 @@ function inboxDaProcessare(slug) {
   const dir = path.join(MATERIE_DIR, slug, '00-inbox');
   if (!fs.existsSync(dir)) return 0;
   return fs.readdirSync(dir, { withFileTypes: true }).filter((d) => d.isFile() && d.name !== '.gitkeep').length;
+}
+
+const SEZIONI_LEGGIBILI = { lezioni: '01-lezioni', concetti: '02-concetti', sintesi: '03-sintesi' };
+
+// Legge un file di una sezione del vault in modo sicuro per un endpoint
+// HTTP: materia e sezione sono validate su whitelist, e il nome file deve
+// combaciare *esattamente* con una voce reale di fs.readdirSync(dir) — non
+// basta che "sembri" un nome file valido (niente `..`, niente path
+// assoluti che aggirino il controllo): se non è nell'elenco reale della
+// cartella, non viene letto. Usata da GET /api/contenuto.
+function leggiContenuto(materia, sezione, file) {
+  if (!listMaterie().includes(materia)) throw new Error('materia non valida');
+  const cartella = SEZIONI_LEGGIBILI[sezione];
+  if (!cartella) throw new Error('sezione non valida');
+  const dir = path.join(MATERIE_DIR, materia, cartella);
+  if (!fs.existsSync(dir)) throw new Error('sezione vuota');
+  const reale = fs.readdirSync(dir).find((f) => f === file);
+  if (!reale) throw new Error('file non trovato');
+  return fs.readFileSync(path.join(dir, reale), 'utf8');
+}
+
+// Cartella 00-inbox/ di una materia, validata — usata dall'upload. Mai
+// costruire il percorso di destinazione altrove con la materia grezza
+// dalla request.
+function inboxDir(materia) {
+  if (!listMaterie().includes(materia)) throw new Error('materia non valida');
+  const dir = path.join(MATERIE_DIR, materia, '00-inbox');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
 }
 
 function allCards({ soloStato = null } = {}) {
@@ -206,6 +244,7 @@ module.exports = {
   listMaterie,
   readMateriaYml,
   readFrontmatter,
+  separaFrontmatter,
   flashcardFiles,
   parseDeck,
   setCardStato,
@@ -214,4 +253,6 @@ module.exports = {
   listConcetti,
   listLezioni,
   inboxDaProcessare,
+  leggiContenuto,
+  inboxDir,
 };

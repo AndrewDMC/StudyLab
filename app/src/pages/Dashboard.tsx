@@ -61,9 +61,12 @@ export function Dashboard() {
                 {m.data_esame && <span className="countdown">Esame: {m.data_esame}</span>}
               </div>
 
-              {p && <PipelineStrip p={p} />}
+              {p && <PipelineStrip slug={m.slug} p={p} />}
 
               <div className="scheda-materia-azioni">
+                <Link className="chip-azione" to={`/materiali?materia=${m.slug}`}>
+                  Materiali
+                </Link>
                 <Link
                   className={`chip-azione ${p && p.ripasso.dovute + p.ripasso.nuove > 0 ? 'evidenzia' : ''}`}
                   to={`/active-recall?tab=ripassa&materia=${m.slug}`}
@@ -93,19 +96,24 @@ export function Dashboard() {
 // nella web app (flashcard/cura/ripasso); compattazione ed esami sono
 // segnaposto — la fase esiste nel piano ma non ha ancora un'interfaccia,
 // e va detto chiaramente invece di nasconderla.
-function PipelineStrip({ p }: { p: PipelineMateria }) {
+function PipelineStrip({ slug, p }: { slug: string; p: PipelineMateria }) {
   const fasi: { label: string; count: number; nota?: string }[] = [
-    { label: 'Cattura', count: p.cattura.daProcessare, nota: 'via Claude Code' },
-    { label: 'Schematizza', count: p.schematizza.daSchematizzare, nota: 'via Claude Code' },
-    { label: 'Flashcard', count: p.flashcard.concettiSenzaCarte, nota: 'concetti senza carte' },
+    { label: 'Cattura', count: p.cattura.daProcessare, nota: 'clicca per caricare o lanciare /cattura' },
+    { label: 'Schematizza', count: p.schematizza.daSchematizzare, nota: 'clicca per schematizzare le lezioni grezze' },
+    { label: 'Flashcard', count: p.flashcard.concettiSenzaCarte, nota: 'concetti senza carte — clicca per generarle' },
   ];
   return (
     <div className="pipeline-strip">
       {fasi.map((f) => (
-        <div key={f.label} className={`pipeline-fase ${f.count > 0 ? 'attenzione' : 'ok'}`} title={f.nota}>
+        <Link
+          key={f.label}
+          to={`/materiali?materia=${slug}`}
+          className={`pipeline-fase ${f.count > 0 ? 'attenzione' : 'ok'}`}
+          title={f.nota}
+        >
           <span className="pipeline-numero">{f.count}</span>
           <span className="pipeline-label">{f.label}</span>
-        </div>
+        </Link>
       ))}
       <div className="pipeline-fase pipeline-futura" title="Fase 5 del piano, non ancora implementata">
         <span className="pipeline-numero">—</span>

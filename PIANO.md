@@ -522,6 +522,15 @@ Due conseguenze da tenere a mente:
 Questo è il pezzo che tiene insieme il §0 (l'AI è batch, non runtime) con
 l'esigenza di premere un pulsante dal tablet.
 
+✅ **Implementato per l'uso locale**, prima ancora del deploy in container:
+`cli/lib/jobs.js` (la coda) + `cli/worker.js` (il consumatore, un processo
+che l'utente avvia a parte con `node cli/worker.js`) + la sezione
+**Materiali** della web app (upload, viewer Markdown, pulsanti che accodano
+`/cattura`, `/schematizza`, `/genera-flashcard`). Il meccanismo sotto è
+esattamente questo; cambia solo *dove* gira il worker quando si passa al
+container di §8 (qui: un terminale sulla stessa macchina; lì: il servizio
+`worker` del compose).
+
 ```
 vault/_jobs/
 ├── queue/     job-20260915-141233.json

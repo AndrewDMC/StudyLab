@@ -7,10 +7,20 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
 const vault = require('../../cli/lib/vault');
 const srs = require('../../cli/lib/srs');
+const jobs = require('../../cli/lib/jobs');
 const { costruisciSessione, capPerMateria } = require('../../cli/lib/session');
+
+// memoryStorage, non diskStorage: con multipart, i campi di testo (qui
+// "materia") possono arrivare dopo il file nel form, e i callback di
+// diskStorage per destination/filename vengono invocati prima che
+// req.body sia completo. Tenendo i file in memoria si scrive su disco solo
+// nell'handler della route, quando materia è già validata — vedi sotto.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024, files: 10 } });
 
 // Nota: usa API_PORT e non PORT. Un tool esterno può iniettare PORT nell'
 // ambiente per il processo "principale" del dev server (qui: Vite, vedi
@@ -173,6 +183,81 @@ app.get('/api/pipeline', (req, res) => {
   });
 
   res.json({ materie });
+});
+
+// GET /api/lezioni?materia=slug — elenco lezioni (per il viewer "Materiali").
+app.get('/api/lezioni', (req, res) => {
+  res.json(vault.listLezioni(req.query.materia || null));
+});
+
+// GET /api/contenuto?materia=slug&sezione=lezioni|concetti|sintesi&file=nome.md
+// Lettura sicura di un file del vault (vedi validazione in vault.leggiContenuto:
+// il nome file deve combaciare con una voce reale della cartella, non è mai
+// costruito fidandosi della query string).
+app.get('/api/contenuto', (req, res) => {
+  const { materia, sezione, file } = req.query;
+  try {
+    const raw = vault.leggiContenuto(materia, sezione, file);
+    // Il frontmatter va separato PRIMA di mandare il corpo a un parser
+    // Markdown lato client: altrimenti il "---" viene letto come hr/setext
+    // heading e corrompe il rendering (bug reale trovato testando).
+    const { fm, corpo } = vault.separaFrontmatter(raw);
+    res.json({ frontmatter: fm, corpo });
+  } catch (e) {
+    res.status(404).json({ errore: e.message });
+  }
+});
+
+// POST /api/upload — multipart/form-data: materia + uno o più file, salvati
+// in materie/<materia>/00-inbox/. È la "sezione di inserimento": da qui il
+// materiale entra nel vault, pronto per /cattura (via job, sotto).
+app.post('/api/upload', upload.array('file', 10), (req, res) => {
+  const { materia } = req.body || {};
+  let dir;
+  try {
+    dir = vault.inboxDir(materia);
+  } catch (e) {
+    return res.status(400).json({ errore: e.message });
+  }
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ errore: 'nessun file ricevuto' });
+  }
+
+  const salvati = [];
+  for (const f of req.files) {
+    // Nome sicuro: solo il basename (niente componenti di percorso da un
+    // nome file client-controllato), caratteri ristretti, prefisso
+    // temporale per evitare collisioni tra upload distinti.
+    const base = path
+      .basename(f.originalname)
+      .normalize('NFC')
+      .replace(/[^\p{L}\p{N}._-]+/gu, '-')
+      .slice(0, 120);
+    const nome = `${Date.now()}-${base || 'file'}`;
+    fs.writeFileSync(path.join(dir, nome), f.buffer);
+    salvati.push(nome);
+  }
+  res.json({ ok: true, salvati });
+});
+
+// GET /api/jobs — coda job (tutti gli stati, più recenti prima).
+app.get('/api/jobs', (req, res) => {
+  res.json(jobs.listJobs());
+});
+
+// POST /api/job { skill, args } — accoda un job per il worker (cli/worker.js).
+// Questo endpoint NON invoca Claude: scrive solo un file in _jobs/queue/.
+// Chi esegue davvero il job è un processo separato che l'utente avvia a
+// parte (vedi CLAUDE.md) — vedi PIANO.md §0 sul perché questa separazione
+// è la regola d'oro dell'intero sistema.
+app.post('/api/job', (req, res) => {
+  const { skill, args } = req.body || {};
+  try {
+    const job = jobs.enqueue(skill, args);
+    res.json(job);
+  } catch (e) {
+    res.status(400).json({ errore: e.message });
+  }
 });
 
 // In produzione (container, §8) serve anche il build statico del frontend.

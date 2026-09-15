@@ -155,6 +155,7 @@ app/
 ├── server/index.js   # API Express: legge/scrive il vault via cli/lib/*
 └── src/pages/
     ├── Dashboard.tsx      # hub: stato di OGNI fase per materia + scorciatoie
+    ├── Materiali.tsx      # carica file, visualizza lezioni in Markdown, aziona le skill
     ├── ActiveRecall.tsx   # Ripasso e Cura unificati, due tab della stessa sezione
     └── Concetti.tsx       # esplorazione per materia, non un dump tabellare
 ```
@@ -180,3 +181,44 @@ Il server usa `API_PORT` (non `PORT`) per la propria porta: `PORT` è
 riservato al processo che un eventuale tool di dev/preview considera
 "principale" (qui: Vite) e non va condiviso tra i due processi lanciati da
 `concurrently`, altrimenti collidono sulla stessa porta.
+
+## Materiali: upload, viewer, e come la web app aziona le skill
+
+`Materiali.tsx` è la "sezione di inserimento + visualizzazione" per
+materia: carica file in `00-inbox/` (`POST /api/upload`), mostra le
+lezioni renderizzate in Markdown vero — non solo le flashcard —
+(`GET /api/contenuto`, con **KaTeX** per le formule), e ha i pulsanti per
+far girare `/cattura`, `/schematizza`, `/genera-flashcard` sul materiale.
+
+**Come funziona il trigger delle skill, ed è importante capirlo bene:**
+il server (`app/server/index.js`) **non invoca mai Claude**. `POST
+/api/job` scrive solo un file JSON in `_jobs/queue/` (vedi
+`cli/lib/jobs.js`) — esattamente il meccanismo a coda descritto in
+PIANO.md §8, qui implementato per l'uso locale prima ancora del deploy in
+container. Chi esegue davvero il job è **`cli/worker.js`**, un processo
+**separato che l'utente avvia esplicitamente**:
+
+```
+node cli/worker.js
+```
+
+Il worker fa polling della coda (ogni 3s, **concorrenza 1** — mai job in
+parallelo, il rate limit è dell'account) e per ognuno spawna un vero
+`claude -p "/<skill> <args>" --permission-mode acceptEdits --allowed-tools
+Read,Write,Edit,Glob,Grep` nella root del vault. Senza il worker attivo, i
+pulsanti della UI accodano job che restano in `queue` finché non parte.
+
+**Nota di sicurezza**, perché qui il prompt passato a `claude` è costruito
+da input che arriva da una request HTTP: `cli/lib/jobs.js` valida ogni
+argomento con una whitelist di caratteri stretta (`materia` deve essere
+uno slug esistente in `materie/`, `data` deve combaciare `AAAA-MM-GG`)
+*prima* di costruire il prompt — mai fidarsi del solo escaping dello shell.
+Le skill invocabili sono una whitelist esplicita (`SKILL_COMANDI`), non un
+prompt libero: se serve una nuova skill accodabile dalla UI, va aggiunta lì
+esplicitamente, non generalizzata a "qualunque comando".
+
+`GET /api/contenuto` (usato dal viewer) ha la stessa cautela sui percorsi:
+il nome file richiesto deve combaciare esattamente con una voce reale di
+`fs.readdirSync()` sulla cartella della materia — non basta "sembrare" un
+percorso valido, previene path traversal anche senza sanitizzazione manuale
+della stringa.
