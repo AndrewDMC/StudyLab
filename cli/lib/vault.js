@@ -30,9 +30,17 @@ function readMateriaYml(slug) {
     let [, key, val] = m;
     val = val.trim();
     if (val === '' || val.startsWith('|')) continue; // blocchi multilinea: ignorati dal CLI
-    if (val === 'null') val = null;
-    else if (/^-?\d+$/.test(val)) val = parseInt(val, 10);
-    else val = val.replace(/^"(.*)"$/, '$1');
+
+    const quotato = val.match(/^"([^"]*)"\s*(?:#.*)?$/);
+    if (quotato) {
+      val = quotato[1];
+    } else {
+      // Toglie un eventuale commento inline "# ..." non tra virgolette,
+      // altrimenti "scritto  # orale | scritto | misto" resta nel valore.
+      val = val.replace(/\s+#.*$/, '').trim();
+      if (val === 'null') val = null;
+      else if (/^-?\d+$/.test(val)) val = parseInt(val, 10);
+    }
     out[key] = val;
   }
   return out;

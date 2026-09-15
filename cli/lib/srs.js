@@ -92,10 +92,13 @@ function valuta(carta, voto) {
 }
 
 // Restituisce le carte dovute oggi, applicando il cap giornaliero di carte
-// nuove per materia (le carte già introdotte e dovute non hanno cap: si
+// nuove **per materia** (le carte già introdotte e dovute non hanno cap: si
 // ripassano sempre). `cardsInfo` è l'elenco di { srsId, materia, concetto }
-// letto dal vault (fonte di verità sui mazzi correnti).
-function carteDaRipassare(state, cardsInfo, capNuoveCarte) {
+// letto dal vault. `capPerMateria` è { <slug-materia>: numero }: ogni
+// materia rispetta il proprio cap configurato in materia.yml, non un unico
+// numero applicato a tutte (altrimenti una materia con cap basso erediterebbe
+// il cap più alto delle altre).
+function carteDaRipassare(state, cardsInfo, capPerMateria) {
   const t = today();
   const nuoveIntrodotteOggiPerMateria = {};
 
@@ -119,12 +122,13 @@ function carteDaRipassare(state, cardsInfo, capNuoveCarte) {
     if (esistente.due <= t) dovute.push(info);
   }
 
-  const cap = { ...nuoveIntrodotteOggiPerMateria };
+  const usate = { ...nuoveIntrodotteOggiPerMateria };
   const nuoveAmmesse = [];
   for (const info of nuove) {
-    const used = cap[info.materia] || 0;
-    if (used >= capNuoveCarte) continue;
-    cap[info.materia] = used + 1;
+    const capMateria = capPerMateria[info.materia] ?? Infinity;
+    const used = usate[info.materia] || 0;
+    if (used >= capMateria) continue;
+    usate[info.materia] = used + 1;
     nuoveAmmesse.push(info);
   }
 

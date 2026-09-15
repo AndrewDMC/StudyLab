@@ -18,6 +18,7 @@ _jobs/
 # Dipendenze e build della web app (Fase 4)
 app/node_modules/
 app/dist/
+app/tsconfig.tsbuildinfo
 worker/node_modules/
 
 # OS / editor

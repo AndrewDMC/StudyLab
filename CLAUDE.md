@@ -142,3 +142,26 @@ node cli/ripassa.js studia [materia]   # sessione di ripasso, interleaved tra ma
 Legge/scrive `srs/state.json` (unico stato mutabile) e `04-flashcard/*.md`
 (per cambiare `stato` da `proposta`/`attiva` a `sospesa`, o rimuovere una
 carta scartata in curazione). Non tocca mai `02-concetti/` né `01-lezioni/`.
+
+## Web app (`app/`)
+
+Fase 4 del piano: stessa logica della CLI, interfaccia vera. Anche questa
+**non è una skill** e non va invocata dalle skill — gira senza AI, riusa
+`cli/lib/*` come unica fonte di verità (SM-2, parsing dei mazzi,
+costruzione della sessione), non la riscrive.
+
+```
+app/
+├── server/index.js   # API Express: legge/scrive il vault via cli/lib/*
+└── src/               # React + Vite: Dashboard, Ripasso, Cura, Concetti
+```
+
+Sviluppo: `npm install && npm run dev` dentro `app/` (avvia API su :8081 e
+Vite su :5173 insieme, via `concurrently`). Produzione: `npm run build &&
+npm start` — un solo processo Express che serve sia l'API sia il build
+statico (questo è il servizio `web` del container in PIANO.md §8).
+
+Il server usa `API_PORT` (non `PORT`) per la propria porta: `PORT` è
+riservato al processo che un eventuale tool di dev/preview considera
+"principale" (qui: Vite) e non va condiviso tra i due processi lanciati da
+`concurrently`, altrimenti collidono sulla stessa porta.

@@ -255,11 +255,30 @@ per il countdown esame e per `/compatta settimana|mese`.
 Schermate in ordine di priorità:
 
 1. **Ripasso** — carta, spazio per rivelare, 1-4 per valutare. Tutto da
-   tastiera, zero mouse.
+   tastiera, zero mouse. **Implementato.**
 2. **Dashboard** — carte in scadenza per materia, giorni all'esame, heatmap
-   della confidenza per argomento, concetti mai testati.
-3. **Browser dei concetti** — ricerca e grafo dei prerequisiti.
-4. **Simulazione d'esame** — timer, esercizi, area di risposta.
+   della confidenza per argomento, concetti mai testati. **Implementata**
+   (senza countdown esame e heatmap per ora: bastano `nome`/`data_esame` in
+   `materia.yml` quando popolati per aggiungerli).
+3. **Browser dei concetti** — ricerca e grafo dei prerequisiti. **Versione
+   minima implementata** (elenco filtrabile per titolo/ID/tag); il grafo dei
+   prerequisiti resta da fare.
+4. **Simulazione d'esame** — timer, esercizi, area di risposta. Non ancora
+   implementata: dipende da `/estrai-esami` (Fase 6), non ha senso costruire
+   l'interfaccia prima del motore che la alimenta.
+
+**Implementato** in `app/` (Vite + React + TypeScript + Express), come
+descritto in CLAUDE.md. Il server riusa `cli/lib/*` — stessa logica della
+CLI (Fase 3), non una riscrittura: SM-2, parsing dei mazzi e costruzione
+della sessione restano un'unica fonte di verità tra CLI e web app.
+
+⚠️ **Insidia reale incontrata nel deploy**, rilevante per §8: un tool di
+preview/dev che inietta `PORT` nell'ambiente per il "processo principale"
+del dev server propaga quella variabile anche a processi paralleli lanciati
+con `concurrently` — se il server API legge la stessa `PORT`, collide con il
+frontend sulla stessa porta. Va usato un nome di variabile dedicato per
+l'API (qui: `API_PORT`), mai `PORT` condiviso tra più processi nello stesso
+comando `dev`.
 
 **E Obsidian?** Con il requisito multi-dispositivo (fisso, portatile, tablet
 fuori casa) Obsidian **non è più la scelta primaria**: richiederebbe una
@@ -278,14 +297,14 @@ mai copie locali sincronizzate.
 
 | Fase | Cosa | Tempo | Già utilizzabile? |
 |---|---|---|---|
-| 0 | Struttura vault + CLAUDE.md + materia.yml | 1 sera | — |
-| 1 | `/cattura` + `/schematizza` | 1-2 sere | **Sì**: risparmio di tempo immediato |
-| 2 | `/genera-flashcard` + formato carte | 1 sera | Sì, ripassando a mano |
-| 3 | Motore SRS + CLI di ripasso minimale | 2-3 sere | **Sì**: sistema base completo |
-| 4 | Web app di ripasso (KaTeX) | 3-5 sere | Esperienza vera |
+| 0 | ✅ Struttura vault + CLAUDE.md + materia.yml | 1 sera | — |
+| 1 | ✅ `/cattura` + `/schematizza` | 1-2 sere | **Sì**: risparmio di tempo immediato |
+| 2 | ✅ `/genera-flashcard` + formato carte | 1 sera | Sì, ripassando a mano |
+| 3 | ✅ Motore SRS + CLI di ripasso minimale | 2-3 sere | **Sì**: sistema base completo |
+| 4 | ✅ Web app di ripasso (KaTeX) | 3-5 sere | Esperienza vera |
 | 5 | `/compatta` settimanale e mensile | 1 sera | Da fine primo mese |
 | 6 | `/estrai-esami` + `/simula-esame` + `/correggi` | 2-3 sere | Sotto sessione |
-| 7 | Dashboard e statistiche | 2 sere | Nice to have |
+| 7 | Statistiche avanzate (heatmap, countdown esame) | 2 sere | Nice to have — dashboard base già in Fase 4 |
 | 8 | Deploy su home server + accesso remoto (§8) | 1-2 sere | Sì, da tutti i dispositivi |
 | 9 | Editor di schemi e digitalizzazione (§9) | 3-4 sere | Chiude il ciclo |
 

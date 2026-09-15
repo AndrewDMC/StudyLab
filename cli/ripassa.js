@@ -12,8 +12,7 @@
 const readline = require('readline');
 const vault = require('./lib/vault');
 const srs = require('./lib/srs');
-
-const CAP_NUOVE_DEFAULT = 15;
+const { costruisciSessione } = require('./lib/session');
 
 // Wrapper su readline come async iterator di righe, invece di rl.question()
 // ripetuto: con stdin non interattivo (file/pipe, come nei test o in un
@@ -29,44 +28,9 @@ function createPrompter(rl) {
   };
 }
 
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-// Interleaving: raggruppa per materia, poi pesca a rotazione una carta da
-// ciascuna a turno — così le materie si alternano invece di procedere a
-// blocchi, che è meno efficace per la ritenzione (vedi PIANO.md §3).
-function interleave(cards) {
-  const perMateria = {};
-  for (const c of shuffle(cards)) {
-    (perMateria[c.materia] = perMateria[c.materia] || []).push(c);
-  }
-  const code = Object.keys(perMateria);
-  const out = [];
-  let rimaste = cards.length;
-  while (rimaste > 0) {
-    for (const m of code) {
-      const lista = perMateria[m];
-      if (lista.length) {
-        out.push(lista.shift());
-        rimaste--;
-      }
-    }
-  }
-  return out;
-}
-
 async function cmdStudia(materiaFiltro) {
-  const state = srs.loadState();
-  let attive = vault.allCards({ soloStato: 'attiva' });
-  if (materiaFiltro) attive = attive.filter((c) => c.materia === materiaFiltro);
-
-  if (attive.length === 0) {
+  const attiveEsistono = vault.allCards({ soloStato: 'attiva' }).some((c) => !materiaFiltro || c.materia === materiaFiltro);
+  if (!attiveEsistono) {
     console.log(
       'Nessuna carta "attiva" da ripassare.\n' +
         'Le carte generate da /genera-flashcard nascono "proposta": curale prima con:\n' +
@@ -75,27 +39,17 @@ async function cmdStudia(materiaFiltro) {
     return;
   }
 
-  const capPerMateria = {};
-  for (const slug of vault.listMaterie()) {
-    const info = vault.readMateriaYml(slug);
-    capPerMateria[slug] = Number.isInteger(info.carte_nuove_al_giorno)
-      ? info.carte_nuove_al_giorno
-      : CAP_NUOVE_DEFAULT;
-  }
-  // Usa il cap più permissivo tra le materie coinvolte per la selezione
-  // globale; il cap effettivo per materia è comunque rispettato dentro
-  // carteDaRipassare grazie al campo `materia` di ogni carta.
-  const capMax = Math.max(...Object.values(capPerMateria), CAP_NUOVE_DEFAULT);
-  const { dovute, nuove } = srs.carteDaRipassare(state, attive, capMax);
+  const state = srs.loadState();
+  const { sessione, dovute, nuove, capPerMateria } = costruisciSessione(srs, materiaFiltro);
+  const capMax = Math.max(...Object.values(capPerMateria));
 
-  const sessione = interleave([...dovute, ...nuove]);
   if (sessione.length === 0) {
     console.log('Tutto ripassato per oggi. 🎉');
     return;
   }
 
   console.log(
-    `Sessione: ${dovute.length} da ripassare, ${nuove.length} nuove (cap ${capMax}/materia/giorno).\n` +
+    `Sessione: ${dovute} da ripassare, ${nuove} nuove (cap ${capMax} nuove/giorno, per materia).\n` +
       'Invio per rivelare la risposta, poi 1=again 2=hard 3=good 4=easy, s=sospendi, q=esci.\n'
   );
 

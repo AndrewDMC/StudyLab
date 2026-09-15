@@ -40,3 +40,9 @@ No: non esiste un razionale che sia il più grande elemento dell'insieme.
 sup(A) = √2, ed esiste solo in R (non in Q).
 <!-- srs: 8cecba -->
 <!-- stato: attiva -->
+
+## [C-MAT-0002] Come si definisce l'estremo inferiore inf(A)?
+?
+Il più grande dei minoranti di A.
+<!-- srs: 7b3c9a -->
+<!-- stato: attiva -->
