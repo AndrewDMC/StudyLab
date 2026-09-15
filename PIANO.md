@@ -4,6 +4,26 @@ Sistema locale di gestione dello studio: cattura appunti → schemi → flashcar
 compattazione → testing, con Claude (abbonamento Pro) come motore di
 trasformazione. Nessuna API a pagamento, nessun dato fuori dal PC.
 
+## Stato attuale
+
+| Cosa | Dove | Stato |
+|---|---|---|
+| Struttura del vault, `CLAUDE.md`, `materia.yml` | `materie/`, `CLAUDE.md` | ✅ |
+| Skill `/cattura`, `/schematizza` | `.claude/skills/` | ✅ |
+| Skill `/genera-flashcard` | `.claude/skills/` | ✅ |
+| Motore SRS (SM-2) + CLI di ripasso | `cli/ripassa.js`, `cli/lib/` | ✅ |
+| Web app: Dashboard, Active Recall, Concetti | `app/src/pages/` | ✅ |
+| Web app: Materiali (upload, viewer Markdown, trigger skill) | `app/src/pages/Materiali.tsx` | ✅ |
+| Coda job + worker (`node cli/worker.js`) | `cli/lib/jobs.js`, `cli/worker.js` | ✅ (uso locale; il container di §8 resta da fare) |
+| Skill `/compatta` | — | ⬜ prossimo punto |
+| `/estrai-esami`, `/simula-esame`, `/correggi` | — | ⬜ |
+| Statistiche avanzate in dashboard (heatmap, countdown) | — | ⬜ |
+| Deploy sul server Ubuntu (Docker, Tailscale) | — | ⬜ |
+| Editor/digitalizzazione schemi | — | ⬜ |
+
+Dettagli, motivazioni e alternative scartate per ogni punto sono nelle
+sezioni sotto — questa tabella è solo l'orientamento rapido.
+
 ---
 
 ## 0. La decisione architetturale chiave: come usare Claude senza pagare API
@@ -254,16 +274,23 @@ per il countdown esame e per `/compatta settimana|mese`.
 
 Schermate in ordine di priorità:
 
-1. **Ripasso** — carta, spazio per rivelare, 1-4 per valutare. Tutto da
-   tastiera, zero mouse. **Implementato.**
-2. **Dashboard** — carte in scadenza per materia, giorni all'esame, heatmap
-   della confidenza per argomento, concetti mai testati. **Implementata**
-   (senza countdown esame e heatmap per ora: bastano `nome`/`data_esame` in
-   `materia.yml` quando popolati per aggiungerli).
-3. **Browser dei concetti** — ricerca e grafo dei prerequisiti. **Versione
-   minima implementata** (elenco filtrabile per titolo/ID/tag); il grafo dei
-   prerequisiti resta da fare.
-4. **Simulazione d'esame** — timer, esercizi, area di risposta. Non ancora
+1. **Dashboard** — hub: pipeline strip per materia (cattura, schematizza,
+   flashcard, più segnaposto compattazione/esami), scorciatoie dirette.
+   **Implementata** (countdown esame e heatmap confidenza restano da fare:
+   bastano `nome`/`data_esame` in `materia.yml` quando popolati).
+2. **Materiali** — upload in `00-inbox/`, viewer Markdown delle lezioni
+   (con KaTeX), pulsanti che accodano `/cattura`, `/schematizza`,
+   `/genera-flashcard` per il worker. **Implementata** — non era nello
+   schermo originale del piano, aggiunta su richiesta esplicita per non
+   ridurre la web app a "sola visualizzazione esterna" (vedi §8 sulla coda
+   job).
+3. **Active Recall** — ripasso (spazio per rivelare, 1-4 per valutare,
+   tutto da tastiera) e cura delle carte proposte, due tab della stessa
+   sezione. **Implementata.**
+4. **Concetti** — esplorazione raggruppata per materia, con badge di
+   copertura flashcard. **Versione minima implementata** (ricerca e filtro
+   per titolo/ID/tag/materia); il grafo dei prerequisiti resta da fare.
+5. **Simulazione d'esame** — timer, esercizi, area di risposta. Non ancora
    implementata: dipende da `/estrai-esami` (Fase 6), non ha senso costruire
    l'interfaccia prima del motore che la alimenta.
 
@@ -301,11 +328,11 @@ mai copie locali sincronizzate.
 | 1 | ✅ `/cattura` + `/schematizza` | 1-2 sere | **Sì**: risparmio di tempo immediato |
 | 2 | ✅ `/genera-flashcard` + formato carte | 1 sera | Sì, ripassando a mano |
 | 3 | ✅ Motore SRS + CLI di ripasso minimale | 2-3 sere | **Sì**: sistema base completo |
-| 4 | ✅ Web app di ripasso (KaTeX) | 3-5 sere | Esperienza vera |
+| 4 | ✅ Web app: Dashboard hub, Active Recall, Concetti, **Materiali** (upload, viewer Markdown, trigger skill via coda job) | 3-5 sere | Esperienza vera |
 | 5 | `/compatta` settimanale e mensile | 1 sera | Da fine primo mese |
 | 6 | `/estrai-esami` + `/simula-esame` + `/correggi` | 2-3 sere | Sotto sessione |
 | 7 | Statistiche avanzate (heatmap, countdown esame) | 2 sere | Nice to have — dashboard base già in Fase 4 |
-| 8 | Deploy su home server + accesso remoto (§8) | 1-2 sere | Sì, da tutti i dispositivi |
+| 8 | 🟡 Deploy su home server + accesso remoto (§8) — **la coda job + worker sono già implementati e usabili in locale**; resta da fare solo il container Docker + Tailscale sul server Ubuntu | 1-2 sere | Sì, da tutti i dispositivi |
 | 9 | Editor di schemi e digitalizzazione (§9) | 3-4 sere | Chiude il ciclo |
 
 **Usa il sistema dalla Fase 1.** Il rischio numero uno di questo progetto è
