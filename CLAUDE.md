@@ -78,6 +78,31 @@ Corpo della nota: spiegazione concisa, in stile appunto, non enciclopedico.
 
 Nomina il file `C-ARCH-0042-data-hazard-raw.md` (id + slug del titolo).
 
+## Formato dei mazzi di flashcard (`04-flashcard/*.md`)
+
+Un file per argomento, con un piccolo frontmatter e una carta per blocco:
+
+```markdown
+---
+materia: architettura
+argomento: pipeline-hazard
+---
+
+## [C-ARCH-0042] Cosa distingue un hazard RAW da un WAR?
+?
+RAW = dipendenza vera (lettura dopo scrittura), non eliminabile con renaming.
+WAR = dipendenza di nome, eliminabile con register renaming.
+<!-- srs: 4f2a1b -->
+<!-- stato: proposta -->
+```
+
+- `[C-XXX-NNNN]` nella domanda collega la carta al concetto sorgente.
+- `<!-- srs: xxxxxx -->` è la chiave primaria della carta (6 esadecimali
+  minuscoli, univoca nel vault): resta stabile anche se il testo cambia,
+  ed è ciò che `srs/state.json` referenzia per lo storico delle ripetizioni.
+- `<!-- stato: proposta -->` finché l'utente non cura il mazzo; solo allora
+  diventa `attiva` ed entra nella rotazione dell'app di ripasso.
+
 ## Convenzioni di naming
 
 - Lezioni: `AAAA-MM-GG-slug-argomento.md`
@@ -92,6 +117,9 @@ Nomina il file `C-ARCH-0042-data-hazard-raw.md` (id + slug del titolo).
 - `/schematizza <materia> <data-lezione>` — prende una lezione grezza e
   produce lo schema gerarchico + le note-concetto, collegando ai concetti
   esistenti.
+- `/genera-flashcard <materia> [argomento|ID]` — genera carte di active
+  recall dai concetti `attivo` non ancora coperti, in `stato: proposta` in
+  attesa di curazione. Non generare mai per concetti `stato: bozza`.
 - `/digitalizza-schema` — (Fase 9, non ancora implementata) converte uno
   schema disegnato a mano in outline Markdown + Mermaid.
 

@@ -136,7 +136,9 @@ Input possibili, tutti già gestibili a costo zero:
 - **Foto di appunti a mano** → Claude Code legge le immagini nativamente. Le
   butti in `00-inbox/` e lui le trascrive. È la feature che ti fa risparmiare
   più tempo in assoluto.
-- **Slide PPTX/PDF del docente** → estratte a testo.
+- **Slide PPTX/PDF del docente** → estratte a testo. Richiede `poppler-utils`
+  e `libreoffice` nel worker (vedi §8) — verificato su materiale reale che
+  senza non funziona con PDF scansionati o PPTX con ink a mano libera.
 - **Digitazione diretta** nel file della lezione.
 - **Registrazione audio** → trascrizione locale (vedi §7).
 
@@ -423,6 +425,39 @@ services:
 ```
 
 L'immagine del worker è semplicemente Node + `npm i -g @anthropic-ai/claude-code`.
+
+**Non basta però solo Node.** Il worker è quello che esegue `/cattura` su
+tutto ciò che l'utente butta in `00-inbox/` (foto, PDF, slide), e due
+formati reali emersi testando la Fase 1 su materiale vero richiedono
+strumenti di sistema aggiuntivi nell'immagine — altrimenti la skill fallisce
+silenziosamente proprio sui file più comuni:
+
+- **`poppler-utils`** — necessario per far leggere a Claude le pagine di un
+  PDF come immagini (rendering pagina → PNG). Senza, `/cattura` non riesce a
+  processare PDF scansionati o slide esportate in PDF. `apt install
+  poppler-utils`.
+- **`libreoffice`** (headless) — necessario per le slide `.pptx` che
+  contengono **ink di PowerPoint**: quando un docente scrive a mano col
+  pennino direttamente sulle slide, PowerPoint salva ogni tratto come
+  immagine EMF separata invece che una foto per slide intera. Estrarre le
+  immagini "a mano" prende frammenti illeggibili; `soffice --headless
+  --convert-to png` invece compone i livelli correttamente e produce
+  un'immagine per slide, pronta per la lettura diretta. `apt install
+  libreoffice`.
+
+Sulla macchina di sviluppo Windows nessuno dei due è presente di default —
+motivo per cui questi due casi vanno verificati con un test reale prima di
+fidarsi della skill in produzione. Su Ubuntu (il server di destinazione)
+entrambi si installano con un `apt install` in un minuto: aggiungerli al
+`Dockerfile` del worker, non all'host.
+
+```dockerfile
+# worker/Dockerfile — estratto
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      poppler-utils \
+      libreoffice \
+    && rm -rf /var/lib/apt/lists/*
+```
 
 ### Il punto delicato: l'autenticazione di Claude nel container
 
