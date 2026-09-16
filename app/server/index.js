@@ -245,6 +245,19 @@ app.post('/api/materie', (req, res) => {
   }
 });
 
+// DELETE /api/materie/:slug — elimina un'intera materia (tutta la cartella
+// materie/<slug>/, esami originali inclusi). Molto più distruttiva di
+// DELETE /api/file: la UI la protegge con una conferma "digita il nome",
+// non un semplice window.confirm (vedi vault.eliminaMateria).
+app.delete('/api/materie/:slug', (req, res) => {
+  try {
+    const r = vault.eliminaMateria(req.params.slug);
+    res.json({ ok: true, ...r });
+  } catch (e) {
+    res.status(400).json({ errore: e.message });
+  }
+});
+
 // GET /api/esami-originali?materia=slug — PDF/scan in 05-esami/originali/
 // (percorso relativo alla radice della materia, sottocartelle libere —
 // vedi vault.esamiOriginali). Serve al viewer "Materiali" per elencarli ed

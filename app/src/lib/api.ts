@@ -175,6 +175,7 @@ export const api = {
   concetti: (materia?: string) => req<Concetto[]>(`/concetti${materia ? `?materia=${materia}` : ''}`),
 
   creaMateria: (dati: NuovaMateria) => req<{ ok: true; slug: string }>('/materie', { method: 'POST', body: JSON.stringify(dati) }),
+  eliminaMateria: (slug: string) => req<{ ok: true; slug: string }>(`/materie/${slug}`, { method: 'DELETE' }),
 
   esamiOriginali: (materia: string) => req<string[]>(`/esami-originali?materia=${materia}`),
 

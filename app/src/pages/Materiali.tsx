@@ -27,15 +27,27 @@ export function Materiali() {
   const [materie, setMaterie] = useState<MateriaStato[] | null>(null);
   const materiaSel = params.get('materia') || '';
 
+  const ricaricaMaterie = useCallback(
+    (dopoEliminazione?: string) => {
+      api.stato().then((r) => {
+        setMaterie(r.materie);
+        const selCorrente = params.get('materia') || '';
+        // Se la materia selezionata è appena stata eliminata (o non era
+        // ancora impostata), sposta la selezione sulla prima rimasta.
+        if ((dopoEliminazione && dopoEliminazione === selCorrente) || (!selCorrente && r.materie[0])) {
+          const next = new URLSearchParams(params);
+          if (r.materie[0]) next.set('materia', r.materie[0].slug);
+          else next.delete('materia');
+          setParams(next, { replace: true });
+        }
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
   useEffect(() => {
-    api.stato().then((r) => {
-      setMaterie(r.materie);
-      if (!materiaSel && r.materie[0]) {
-        const next = new URLSearchParams(params);
-        next.set('materia', r.materie[0].slug);
-        setParams(next, { replace: true });
-      }
-    });
+    ricaricaMaterie();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -60,14 +72,16 @@ export function Materiali() {
         </select>
       </div>
 
-      {materiaSel && <ContenutoMateria materia={materiaSel} />}
+      {materiaSel && (
+        <ContenutoMateria materia={materiaSel} onMateriaEliminata={() => ricaricaMaterie(materiaSel)} />
+      )}
     </div>
   );
 }
 
 type Apribile = { sezione: 'lezioni' | 'sintesi' | 'esami-estratti' | 'esami-generati' | 'simulazioni' | 'schemi'; file: string; titolo: string };
 
-function ContenutoMateria({ materia }: { materia: string }) {
+function ContenutoMateria({ materia, onMateriaEliminata }: { materia: string; onMateriaEliminata: () => void }) {
   const [pipeline, setPipeline] = useState<PipelineMateria | null>(null);
   const [lezioni, setLezioni] = useState<Lezione[] | null>(null);
   const [sintesi, setSintesi] = useState<Sintesi[] | null>(null);
@@ -366,7 +380,81 @@ function ContenutoMateria({ materia }: { materia: string }) {
       )}
 
       <JobQueue />
+
+      {/* key={materia}: forza il remount (e quindi il reset di
+          aperta/conferma/eliminando) quando la materia selezionata cambia
+          — incluso subito dopo un'eliminazione riuscita, altrimenti il
+          pannello resterebbe bloccato su "Elimino…" puntando alla materia
+          appena sparita mentre mostra già il testo di quella nuova. */}
+      <ZonaPericolosa key={materia} materia={materia} onEliminata={onMateriaEliminata} />
     </>
+  );
+}
+
+// Eliminazione dell'intera materia: molto più distruttiva di un singolo
+// file (si perdono anche gli originali d'esame, sola lettura per le skill
+// ma non per l'utente dalla propria interfaccia — vedi vault.eliminaMateria),
+// quindi niente semplice window.confirm: bisogna digitare lo slug esatto
+// per sbloccare il pulsante, come la cancellazione di un repo su GitHub.
+function ZonaPericolosa({ materia, onEliminata }: { materia: string; onEliminata: () => void }) {
+  const [aperta, setAperta] = useState(false);
+  const [conferma, setConferma] = useState('');
+  const [eliminando, setEliminando] = useState(false);
+  const [errore, setErrore] = useState<string | null>(null);
+
+  async function elimina() {
+    setErrore(null);
+    setEliminando(true);
+    try {
+      await api.eliminaMateria(materia);
+      onEliminata();
+    } catch (e) {
+      setErrore((e as Error).message);
+      setEliminando(false);
+    }
+  }
+
+  if (!aperta) {
+    return (
+      <section className="zona-pericolosa-chiusa">
+        <button className="link-minore link-pericolo" onClick={() => setAperta(true)}>
+          Elimina questa materia…
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="zona-pericolosa">
+      <h2 className="gruppo-titolo">Zona pericolosa</h2>
+      <p className="sottotitolo">
+        Elimina <strong>tutta</strong> la materia <code>{materia}</code>: lezioni, concetti, flashcard, sintesi,
+        esami (inclusi gli originali) e schemi. Non è reversibile.
+      </p>
+      <p className="sottotitolo">
+        Digita <code>{materia}</code> per confermare:
+      </p>
+      <div className="carica-controlli">
+        <input
+          className="ricerca"
+          value={conferma}
+          onChange={(e) => setConferma(e.target.value)}
+          placeholder={materia}
+          disabled={eliminando}
+        />
+        <button
+          className="chip-azione chip-pericolo"
+          disabled={conferma !== materia || eliminando}
+          onClick={elimina}
+        >
+          {eliminando ? 'Elimino…' : 'Elimina definitivamente'}
+        </button>
+        <button className="bottone-secondario" onClick={() => { setAperta(false); setConferma(''); setErrore(null); }} disabled={eliminando}>
+          Annulla
+        </button>
+      </div>
+      {errore && <p className="errore">Errore: {errore}</p>}
+    </section>
   );
 }
 

@@ -453,6 +453,17 @@ function creaMateria({ nome, prefissoId, docente, tipoEsame, dataEsame, carteNuo
   return { slug };
 }
 
+// Elimina un'intera materia (tutta la cartella materie/<slug>/, inclusi gli
+// originali d'esame). Distruttiva e irreversibile molto più della singola
+// eliminaFile: usata solo dopo una conferma "digita il nome esatto" lato
+// UI (vedi Materiali.tsx), non un semplice window.confirm — qui non si
+// perde un file, si perde l'intera materia.
+function eliminaMateria(slug) {
+  if (!listMaterie().includes(slug)) throw new Error('materia non valida');
+  fs.rmSync(path.join(MATERIE_DIR, slug), { recursive: true, force: true });
+  return { slug };
+}
+
 const SEZIONI_LEGGIBILI = {
   lezioni: '01-lezioni',
   concetti: '02-concetti',
@@ -584,6 +595,7 @@ module.exports = {
   leggiContenuto,
   eliminaFile,
   creaMateria,
+  eliminaMateria,
   slugify,
   inboxDir,
 };
