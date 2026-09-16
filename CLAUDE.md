@@ -20,7 +20,8 @@ materie/<materia>/
 │   ├── originali/    # PDF/scan dei temi d'esame passati (immutabili)
 │   ├── estratti/     # esercizi strutturati estratti dai PDF
 │   └── generati/     # varianti nuove generate da Claude
-└── 06-simulazioni/   # tentativi dell'utente + correzioni
+├── 06-simulazioni/   # tentativi dell'utente + correzioni
+└── 07-schemi/        # schemi disegnati a mano, digitalizzati da /digitalizza-schema
 ```
 
 `srs/state.json` è l'unico stato "vivo" del sistema (ripetizione spaziata),
@@ -174,12 +175,37 @@ concetti: [C-ARCH-0042, C-ARCH-0038]
 ---
 ```
 
+## Frontmatter degli schemi (`07-schemi/*.md`)
+
+Trascrizione AI-leggibile di uno schema disegnato a mano, scritta da
+`/digitalizza-schema`. Il file sta **accanto** all'originale (stesso slug,
+estensione diversa: `<slug>.md` + `<slug>.jpg`/`.png`/…) — l'originale resta
+il tuo artefatto, il `.md` alimenta flashcard, compattazioni e ricerche:
+
+```yaml
+---
+materia: architettura
+titolo: Pipeline hazard
+fonte: 00-inbox/2026-09-16-schema-hazard.jpg
+concetti: [C-ARCH-0042, C-ARCH-0038]   # ID esistenti collegati dallo schema
+digitalizzato: 2026-09-16
+---
+```
+
+Corpo: outline Markdown gerarchico (e un blocco Mermaid in più, se lo schema
+ha relazioni non gerarchiche — frecce trasversali, cicli). Concetti che lo
+schema sembra introdurre ma che non esistono ancora in `02-concetti/` vanno
+solo segnalati in un elenco a fine file (`## Concetti nuovi da valutare`),
+mai creati qui: la creazione di note-concetto resta compito esclusivo di
+`/schematizza`, per non duplicare la stessa responsabilità in due skill.
+
 ## Convenzioni di naming
 
 - Lezioni: `AAAA-MM-GG-slug-argomento.md`
 - Concetti: `C-<MATERIA3>-NNNN-slug.md` (MATERIA3 = prime lettere della
   materia: `ARCH`, `MAT`, …; definito in `materia.yml`)
 - Sintesi: `settimana-AAAA-Www.md`, `mensile-AAAA-MM.md`
+- Schemi: `<slug-titolo>.md` + originale con lo stesso slug, in `07-schemi/`
 
 ## Skill disponibili
 
@@ -206,8 +232,11 @@ concetti: [C-ARCH-0042, C-ARCH-0038]
 - `/correggi <materia> <slug>` — corregge una simulazione risolta con la
   rubrica gemella, scrive il report in `06-simulazioni/` e aggiorna
   `confidenza` nelle note-concetto testate.
-- `/digitalizza-schema` — (Fase 9, non ancora implementata) converte uno
-  schema disegnato a mano in outline Markdown + Mermaid.
+- `/digitalizza-schema <materia> <file>` — legge una foto/scan di uno schema
+  disegnato a mano da `00-inbox/` e produce in `07-schemi/` la trascrizione
+  AI-leggibile (outline Markdown + Mermaid se servono relazioni non
+  gerarchiche), collegata agli ID dei concetti esistenti. Non crea nuove
+  note-concetto: quelle restano compito di `/schematizza`.
 
 Quando in dubbio su un formato o una regola non coperta qui, **fermati e
 chiedi** invece di improvvisare una convenzione: questo file va aggiornato,

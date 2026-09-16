@@ -19,7 +19,7 @@ trasformazione. Nessuna API a pagamento, nessun dato fuori dal PC.
 | Skill `/estrai-esami`, `/simula-esame`, `/correggi` | `.claude/skills/` | ✅ |
 | Statistiche avanzate in dashboard (heatmap confidenza, countdown esame) | `app/src/pages/Dashboard.tsx` | ✅ |
 | Deploy sul server Ubuntu (Docker, Tailscale) | `app/Dockerfile`, `worker/Dockerfile`, `deploy/docker-compose.yml` | ✅ |
-| Editor/digitalizzazione schemi | — | ⬜ |
+| Editor/digitalizzazione schemi | `.claude/skills/digitalizza-schema/`, `app/src/components/MarkmapPreview.tsx` | 🟡 |
 
 Dettagli, motivazioni e alternative scartate per ogni punto sono nelle
 sezioni sotto — questa tabella è solo l'orientamento rapido.
@@ -357,7 +357,7 @@ mai copie locali sincronizzate.
 | 6 | ✅ `/estrai-esami` + `/simula-esame` + `/correggi`, integrate in dashboard e coda job | 2-3 sere | Sotto sessione |
 | 7 | ✅ Statistiche avanzate (heatmap confidenza, countdown esame) | 2 sere | Nice to have — dashboard base già in Fase 4 |
 | 8 | ✅ Deploy su home server + accesso remoto (§8): container Docker (`app/Dockerfile`, `worker/Dockerfile`, `deploy/docker-compose.yml`) + esposizione via `tailscale serve` | 1-2 sere | Sì, da tutti i dispositivi |
-| 9 | Editor di schemi e digitalizzazione (§9) | 3-4 sere | Chiude il ciclo |
+| 9 | 🟡 Editor di schemi e digitalizzazione (§9): skill `/digitalizza-schema` + editor outline/markmap in dashboard fatti; Mermaid live e canvas restano | 3-4 sere | Chiude il ciclo |
 
 **Usa il sistema dalla Fase 1.** Il rischio numero uno di questo progetto è
 passare tre settimane a costruirlo mentre le lezioni scorrono, e ritrovarti
@@ -872,14 +872,35 @@ rende più bravo.
 Non costruire un editor grafico da zero. Sono settimane di lavoro per
 riottenere qualcosa di peggiore di quello che esiste.
 
-1. **Outline + preview markmap affiancata** — un `<textarea>` e una libreria.
-   Mezza giornata, copre il 70% dei casi.
+1. ✅ **Outline + preview markmap affiancata** — un `<textarea>` e una
+   libreria. **Implementato**: sezione "Schemi" in
+   [Materiali.tsx](app/src/pages/Materiali.tsx) (editor + elenco + viewer),
+   componente [MarkmapPreview.tsx](app/src/components/MarkmapPreview.tsx)
+   (`markmap-lib` + `markmap-view`, con `autoFit: true` — un `.fit()`
+   sincrono subito dopo `setData()` vede il layout dei nodi non ancora
+   misurato e produce una mappa compressa/illeggibile, bug reale trovato
+   testando), salvataggio in `07-schemi/` via `POST /api/schemi`. Nota per
+   temi scuri: markmap-view inietta un proprio `<style>` scoped con
+   `--markmap-text-color: #333` fisso (illeggibile in dark mode) — sovrascritto
+   in `style.css` con selettore a due classi (`.markmap-svg.markmap`), più
+   specifico della sua regola su una classe sola, per mappare le sue
+   custom property ai colori del tema.
 2. **Blocchi Mermaid con preview live** — altra mezza giornata, stessa logica.
+   Non ancora fatto: i fence ` ```mermaid ` restano testo/codice non
+   renderizzato nel viewer.
 3. **Canvas**: integra JSON Canvas (formato aperto, lo scrivi tu) oppure
    incorpora Excalidraw. Solo dopo che 1 e 2 sono in uso da qualche settimana,
-   così saprai se ti serve davvero.
-4. **Upload foto + `/digitalizza-schema`** — questo invece fallo presto: è il
-   ponte tra la carta (dove probabilmente lavori meglio) e il sistema.
+   così saprai se ti serve davvero. Non ancora fatto, volutamente.
+4. 🟡 **Upload foto + `/digitalizza-schema`** — questo invece fallo presto: è
+   il ponte tra la carta (dove probabilmente lavori meglio) e il sistema.
+   **Skill implementata** in
+   [.claude/skills/digitalizza-schema/](.claude/skills/digitalizza-schema/SKILL.md)
+   (legge una foto da `00-inbox/`, produce outline + collegamenti concetto in
+   `07-schemi/`, mai crea note-concetto — quello resta compito di
+   `/schematizza`). L'upload generico in `00-inbox/` esiste già (Fase 4,
+   `Caricamento` in Materiali.tsx). Manca solo l'ultimo miglio: un pulsante
+   in dashboard che accodi il job per un file specifico dell'inbox — per ora
+   va lanciata a mano (`claude -p "/digitalizza-schema <materia> <file>"`).
 
 ---
 

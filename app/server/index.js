@@ -256,6 +256,27 @@ app.get('/api/simulazioni', (req, res) => {
   res.json(vault.simulazioni(req.query.materia || null));
 });
 
+// GET /api/schemi?materia=slug — schemi in 07-schemi/ (Fase 9): sia quelli
+// digitalizzati da foto (/digitalizza-schema) sia quelli scritti a mano
+// libera nell'editor outline qui sotto.
+app.get('/api/schemi', (req, res) => {
+  res.json(vault.listSchemi(req.query.materia || null));
+});
+
+// POST /api/schemi { materia, titolo, outline } — salva un outline scritto
+// direttamente nell'editor della dashboard (Fase 9 §A: "un <textarea> e
+// una libreria", mai una chiamata a Claude — è testo scritto dall'utente,
+// non generato, vedi CLAUDE.md).
+app.post('/api/schemi', (req, res) => {
+  const { materia, titolo, outline } = req.body || {};
+  try {
+    const r = vault.salvaSchemaOutline(materia, { titolo, outline, oggi: srs.today() });
+    res.json({ ok: true, ...r });
+  } catch (e) {
+    res.status(400).json({ errore: e.message });
+  }
+});
+
 // GET /api/contenuto?materia=slug&sezione=lezioni|concetti|sintesi&file=nome.md
 // Lettura sicura di un file del vault (vedi validazione in vault.leggiContenuto:
 // il nome file deve combaciare con una voce reale della cartella, non è mai

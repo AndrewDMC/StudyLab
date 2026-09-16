@@ -296,6 +296,78 @@ function simulazioni(materiaFiltro) {
   return out;
 }
 
+// Elenco degli schemi (frontmatter di 07-schemi/*.md): sia quelli
+// digitalizzati da foto (/digitalizza-schema) sia quelli scritti a mano
+// libera nell'editor outline della dashboard (Fase 9 §A, vedi
+// salvaSchemaOutline sotto) — stesso frontmatter per entrambi, cambia solo
+// `fonte` (vedi CLAUDE.md).
+function listSchemi(materiaFiltro) {
+  const out = [];
+  for (const slug of materiaFiltro ? [materiaFiltro] : listMaterie()) {
+    const dir = path.join(MATERIE_DIR, slug, SCHEMI_DIR_NAME);
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.md')) continue;
+      const fm = readFrontmatter(path.join(dir, f));
+      out.push({
+        materia: slug,
+        file: f,
+        titolo: fm.titolo || f,
+        fonte: fm.fonte || null,
+        concetti: fm.concetti || '',
+        digitalizzato: fm.digitalizzato || null,
+      });
+    }
+  }
+  out.sort((a, b) => (b.digitalizzato || '').localeCompare(a.digitalizzato || ''));
+  return out;
+}
+
+function slugifyTitolo(titolo) {
+  const slug = titolo
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return slug || 'schema';
+}
+
+// Salva un outline scritto direttamente nell'editor della dashboard (non
+// da una foto: quella via è /digitalizza-schema) in
+// 07-schemi/<slug>.md, con lo stesso frontmatter documentato in
+// CLAUDE.md — `fonte` è "digitazione diretta" invece del percorso a
+// un'immagine. Gli ID concetto già presenti nel testo tra parentesi
+// (stessa convenzione di /schematizza e /digitalizza-schema, es.
+// "Data hazard (C-ARCH-0042)") popolano `concetti` automaticamente,
+// senza che l'utente li ricopi a mano.
+function salvaSchemaOutline(materia, { titolo, outline, oggi }) {
+  if (!listMaterie().includes(materia)) throw new Error('materia non valida');
+  if (!titolo || !titolo.trim()) throw new Error('titolo obbligatorio');
+  if (!outline || !outline.trim()) throw new Error('outline vuoto');
+
+  const dir = path.join(MATERIE_DIR, materia, SCHEMI_DIR_NAME);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const concetti = [...new Set(outline.match(/C-[A-Z]+-\d{4}/g) || [])];
+  const slug = slugifyTitolo(titolo);
+  const frontmatter = [
+    '---',
+    `materia: ${materia}`,
+    `titolo: ${titolo.trim()}`,
+    'fonte: "digitazione diretta"',
+    `concetti: [${concetti.join(', ')}]`,
+    `digitalizzato: ${oggi}`,
+    '---',
+    '',
+  ].join('\n');
+
+  const file = `${slug}.md`;
+  fs.writeFileSync(path.join(dir, file), frontmatter + outline.trim() + '\n', 'utf8');
+  return { file, slug };
+}
+
 // Quanti elementi (foto, PDF, testo) attendono ancora /cattura in 00-inbox/,
 // escludendo _processati/ e i file di servizio come .gitkeep.
 function inboxDaProcessare(slug) {
@@ -304,6 +376,8 @@ function inboxDaProcessare(slug) {
   return fs.readdirSync(dir, { withFileTypes: true }).filter((d) => d.isFile() && d.name !== '.gitkeep').length;
 }
 
+const SCHEMI_DIR_NAME = '07-schemi';
+
 const SEZIONI_LEGGIBILI = {
   lezioni: '01-lezioni',
   concetti: '02-concetti',
@@ -311,6 +385,7 @@ const SEZIONI_LEGGIBILI = {
   'esami-estratti': path.join('05-esami', 'estratti'),
   'esami-generati': path.join('05-esami', 'generati'),
   simulazioni: '06-simulazioni',
+  schemi: SCHEMI_DIR_NAME,
 };
 
 // Legge un file di una sezione del vault in modo sicuro per un endpoint
@@ -375,6 +450,8 @@ module.exports = {
   esamiDaEstrarre,
   esamiGenerati,
   simulazioni,
+  listSchemi,
+  salvaSchemaOutline,
   inboxDaProcessare,
   leggiContenuto,
   inboxDir,

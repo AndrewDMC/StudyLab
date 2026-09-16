@@ -107,6 +107,15 @@ export interface Simulazione {
   punteggioTotale: string | null;
 }
 
+export interface Schema {
+  materia: string;
+  file: string;
+  titolo: string;
+  fonte: string | null;
+  concetti: string;
+  digitalizzato: string | null;
+}
+
 export type SkillNome = 'cattura' | 'schematizza' | 'genera-flashcard' | 'compatta' | 'estrai-esami' | 'simula-esame' | 'correggi';
 
 export interface Job {
@@ -150,7 +159,14 @@ export const api = {
   esamiEstratti: (materia?: string) => req<EsameEstratto[]>(`/esami-estratti${materia ? `?materia=${materia}` : ''}`),
   esamiGenerati: (materia?: string) => req<EsameGenerato[]>(`/esami-generati${materia ? `?materia=${materia}` : ''}`),
   simulazioni: (materia?: string) => req<Simulazione[]>(`/simulazioni${materia ? `?materia=${materia}` : ''}`),
-  contenuto: (materia: string, sezione: 'lezioni' | 'concetti' | 'sintesi' | 'esami-estratti' | 'esami-generati' | 'simulazioni', file: string) =>
+  schemi: (materia?: string) => req<Schema[]>(`/schemi${materia ? `?materia=${materia}` : ''}`),
+  salvaSchema: (materia: string, titolo: string, outline: string) =>
+    req<{ ok: true; file: string; slug: string }>('/schemi', { method: 'POST', body: JSON.stringify({ materia, titolo, outline }) }),
+  contenuto: (
+    materia: string,
+    sezione: 'lezioni' | 'concetti' | 'sintesi' | 'esami-estratti' | 'esami-generati' | 'simulazioni' | 'schemi',
+    file: string
+  ) =>
     req<{ frontmatter: Record<string, string>; corpo: string }>(
       `/contenuto?materia=${materia}&sezione=${sezione}&file=${encodeURIComponent(file)}`
     ),

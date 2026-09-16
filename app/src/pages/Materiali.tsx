@@ -8,11 +8,13 @@ import {
   Lezione,
   MateriaStato,
   PipelineMateria,
+  Schema,
   SkillNome,
   Simulazione,
   Sintesi,
 } from '../lib/api';
 import { Markdown } from '../components/Markdown';
+import { MarkmapPreview } from '../components/MarkmapPreview';
 
 // "Sezione di inserimento" + "sezione di visualizzazione" richieste
 // dall'utente: qui il materiale entra nel vault (upload in 00-inbox) e si
@@ -62,7 +64,7 @@ export function Materiali() {
   );
 }
 
-type Apribile = { sezione: 'lezioni' | 'sintesi' | 'esami-estratti' | 'esami-generati' | 'simulazioni'; file: string; titolo: string };
+type Apribile = { sezione: 'lezioni' | 'sintesi' | 'esami-estratti' | 'esami-generati' | 'simulazioni' | 'schemi'; file: string; titolo: string };
 
 function ContenutoMateria({ materia }: { materia: string }) {
   const [pipeline, setPipeline] = useState<PipelineMateria | null>(null);
@@ -71,6 +73,7 @@ function ContenutoMateria({ materia }: { materia: string }) {
   const [estratti, setEstratti] = useState<EsameEstratto[] | null>(null);
   const [generati, setGenerati] = useState<EsameGenerato[] | null>(null);
   const [simulazioni, setSimulazioni] = useState<Simulazione[] | null>(null);
+  const [schemi, setSchemi] = useState<Schema[] | null>(null);
   const [aperta, setAperta] = useState<Apribile | null>(null);
   const [contenuto, setContenuto] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
@@ -83,6 +86,7 @@ function ContenutoMateria({ materia }: { materia: string }) {
     api.esamiEstratti(materia).then(setEstratti);
     api.esamiGenerati(materia).then(setGenerati);
     api.simulazioni(materia).then(setSimulazioni);
+    api.schemi(materia).then(setSchemi);
   }, [materia]);
 
   useEffect(() => {
@@ -250,6 +254,35 @@ function ContenutoMateria({ materia }: { materia: string }) {
         )}
       </section>
 
+      <section className="gruppo-materia">
+        <h2 className="gruppo-titolo">Schemi</h2>
+        {!schemi ? (
+          <p>Caricamento…</p>
+        ) : schemi.length === 0 ? (
+          <p className="sottotitolo">
+            Nessuno schema ancora. Scrivine uno qui sotto, oppure fotografalo e lancia /digitalizza-schema.
+          </p>
+        ) : (
+          <div className="lista-lezioni">
+            {schemi.map((s) => (
+              <div key={s.file} className={aperta?.file === s.file ? 'riga-lezione attiva' : 'riga-lezione'}>
+                <button
+                  className="riga-lezione-corpo"
+                  onClick={() => apri({ sezione: 'schemi', file: s.file, titolo: s.titolo })}
+                >
+                  <span className="riga-lezione-titolo">{s.titolo}</span>
+                  <span className="riga-lezione-meta">
+                    <span className="badge-stato">{s.fonte === 'digitazione diretta' ? 'scritto' : 'digitalizzato'}</span> ·{' '}
+                    {s.digitalizzato || '?'}
+                  </span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <EditorSchema materia={materia} onSalvato={ricarica} />
+      </section>
+
       {aperta && (
         <section className="visore">
           <div className="visore-intestazione">
@@ -258,7 +291,13 @@ function ContenutoMateria({ materia }: { materia: string }) {
               Chiudi
             </button>
           </div>
-          {contenuto === null ? <p>Caricamento…</p> : <Markdown text={contenuto} />}
+          {contenuto === null ? (
+            <p>Caricamento…</p>
+          ) : aperta.sezione === 'schemi' ? (
+            <MarkmapPreview outline={contenuto} />
+          ) : (
+            <Markdown text={contenuto} />
+          )}
         </section>
       )}
 
@@ -370,6 +409,72 @@ function AzioniPipeline({
         (<code>node cli/worker.js</code>) perché è lui a invocare davvero Claude Code, mai il server della web app.
       </p>
     </section>
+  );
+}
+
+// Editor outline+markmap (Fase 9 §A): un <textarea> e una libreria,
+// niente formato nuovo. Nessuna chiamata a Claude — è testo che l'utente
+// scrive lui stesso, salvato subito in 07-schemi/ (vedi CLAUDE.md e
+// PIANO.md §9: "digitare è più veloce che disegnare" per il 70% dei casi).
+function EditorSchema({ materia, onSalvato }: { materia: string; onSalvato: () => void }) {
+  const [aperto, setAperto] = useState(false);
+  const [titolo, setTitolo] = useState('');
+  const [outline, setOutline] = useState('- ');
+  const [salvando, setSalvando] = useState(false);
+  const [errore, setErrore] = useState<string | null>(null);
+
+  async function salva() {
+    setErrore(null);
+    setSalvando(true);
+    try {
+      await api.salvaSchema(materia, titolo, outline);
+      setTitolo('');
+      setOutline('- ');
+      setAperto(false);
+      onSalvato();
+    } catch (e) {
+      setErrore((e as Error).message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (!aperto) {
+    return (
+      <button className="bottone-secondario" onClick={() => setAperto(true)}>
+        + Nuovo schema
+      </button>
+    );
+  }
+
+  return (
+    <div className="editor-schema">
+      <input
+        className="ricerca"
+        placeholder="Titolo dello schema"
+        value={titolo}
+        onChange={(e) => setTitolo(e.target.value)}
+      />
+      <div className="editor-schema-corpo">
+        <textarea
+          className="editor-schema-testo"
+          value={outline}
+          onChange={(e) => setOutline(e.target.value)}
+          placeholder={'- Argomento\n  - Sotto-argomento (C-ARCH-0042)\n    - Dettaglio'}
+          spellCheck={false}
+        />
+        <MarkmapPreview outline={outline} />
+      </div>
+      {errore && <p className="errore">Errore: {errore}</p>}
+      <div className="carica-controlli">
+        <button className="bottone-secondario" onClick={() => setAperto(false)} disabled={salvando}>
+          Annulla
+        </button>
+        <button className="chip-azione evidenzia" onClick={salva} disabled={salvando || !titolo.trim() || !outline.trim()}>
+          {salvando ? 'Salvo…' : 'Salva schema'}
+        </button>
+      </div>
+    </div>
   );
 }
 
