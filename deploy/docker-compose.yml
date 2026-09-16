@@ -1,0 +1,44 @@
+# StudyLab — deploy sul server (PIANO.md §8).
+#
+# Va lanciato da dentro vault/deploy/ (cioè: `cd /srv/studylab/vault/deploy
+# && docker compose up -d --build`). Due servizi soltanto: Tailscale gira
+# già sull'host, quindi niente sidecar (vedi PIANO.md §8, "Deploy sul tuo
+# server").
+#
+# Layout atteso sull'host:
+#   /srv/studylab/
+#   ├── vault/            # questo repo, clonato — vault/deploy è qui
+#   └── claude-config/     # credenziali Claude Code (fuori da git apposta)
+#
+# I bind mount sotto usano percorsi relativi a QUESTO file: ../materie
+# eccetera puntano dentro vault/, ../../claude-config punta fuori, al
+# sibling claude-config/. Se sposti la cartella /srv/studylab altrove i
+# percorsi restano validi finché la struttura relativa non cambia.
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: app/Dockerfile
+    volumes:
+      - ../materie:/vault/materie
+      - ../srs:/vault/srs
+      - ../_jobs:/vault/_jobs
+    environment:
+      - API_PORT=8081
+    ports:
+      - "127.0.0.1:8081:8081"   # esposto solo via Tailscale Serve, mai su 0.0.0.0
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: worker/Dockerfile
+    volumes:
+      - ../materie:/vault/materie
+      - ../_jobs:/vault/_jobs
+      - ../../claude-config:/root/.claude
+    restart: unless-stopped
+    # Concorrenza 1 per design (vedi cli/worker.js e PIANO.md §8): non
+    # scalare le repliche di questo servizio, competerebbero sullo stesso
+    # rate limit dell'account.

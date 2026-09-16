@@ -1,0 +1,11 @@
+# Contesto di build ridotto: le immagini copiano solo le sottocartelle che
+# servono (vedi app/Dockerfile, worker/Dockerfile), ma senza questo file
+# l'intero repo verrebbe comunque inviato al daemon Docker come contesto.
+.git
+risorse/
+materie/*/00-inbox/*
+materie/*/05-esami/originali/*
+app/node_modules
+app/dist
+_jobs/
+*.log
