@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-16T00:00:00Z",
+  "title": "Design System: StudyLab",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Editorial Blue",
+        "canonical": "#1e4080",
+        "tonalRamp": ["#0a1830", "#122950", "#1a3468", "#1e4080", "#3a5ea0", "#7fa6dd", "#b0c8ec", "#dce6f6"]
+      },
+      "accent-fg": {
+        "role": "primary-on",
+        "displayName": "White on Accent",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#1a1a1a", "#404040", "#666666", "#8c8c8c", "#b3b3b3", "#d9d9d9", "#f0f0f0", "#ffffff"]
+      },
+      "verde": {
+        "role": "success",
+        "displayName": "Verde Progresso",
+        "canonical": "#3f8f5f",
+        "tonalRamp": ["#0e2819", "#1a4529", "#2a6b41", "#3f8f5f", "#5aaa78", "#7ec496", "#a8d9ba", "#d6f0e4"]
+      },
+      "ambra": {
+        "role": "warning",
+        "displayName": "Ambra Attenzione",
+        "canonical": "#b8860b",
+        "tonalRamp": ["#2c1f02", "#4e3806", "#7d5a09", "#b8860b", "#d4a51e", "#e8c04a", "#f4d98a", "#faf0c6"]
+      },
+      "arancio": {
+        "role": "action",
+        "displayName": "Arancio Urgenza",
+        "canonical": "#c96a1f",
+        "tonalRamp": ["#2a1500", "#4d2508", "#7a3d0e", "#c96a1f", "#e08840", "#edaa6e", "#f5cca3", "#fce8d4"]
+      },
+      "rosso": {
+        "role": "error",
+        "displayName": "Rosso Critico",
+        "canonical": "#b3423a",
+        "tonalRamp": ["#2a0904", "#4e1510", "#7a251f", "#b3423a", "#cc6058", "#e08c86", "#f0b9b5", "#fae3e2"]
+      },
+      "ground": {
+        "role": "neutral-bg",
+        "displayName": "Cool Ground",
+        "canonical": "#f2f1ef",
+        "tonalRamp": ["#18181a", "#2f2f2c", "#535350", "#767673", "#9a9a97", "#c0bfba", "#dedcd7", "#f2f1ef"]
+      },
+      "surface": {
+        "role": "neutral-surface",
+        "displayName": "Surface",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#1c1c1a", "#3a3a38", "#5a5a58", "#7c7c7a", "#a0a09e", "#c8c8c6", "#e8e8e6", "#ffffff"]
+      },
+      "surface-2": {
+        "role": "neutral-surface-inset",
+        "displayName": "Surface Inset",
+        "canonical": "#eeede9",
+        "tonalRamp": ["#1a1a18", "#302f2c", "#525048", "#75736a", "#99968c", "#bcb9af", "#dad8d0", "#eeede9"]
+      },
+      "text": {
+        "role": "neutral-text",
+        "displayName": "Near-Black Text",
+        "canonical": "#101010",
+        "tonalRamp": ["#000000", "#101010", "#2a2a2a", "#464646", "#6b6b6b", "#8e8e8e", "#bbbbbb", "#e8e8e8"]
+      },
+      "text-2": {
+        "role": "neutral-text-secondary",
+        "displayName": "Text Secondary",
+        "canonical": "#5a5a55",
+        "tonalRamp": ["#161614", "#2b2b28", "#42423e", "#5a5a55", "#7c7c76", "#9c9c96", "#c0c0ba", "#e4e4de"]
+      },
+      "text-3": {
+        "role": "neutral-text-tertiary",
+        "displayName": "Text Tertiary",
+        "canonical": "#8a8a85",
+        "tonalRamp": ["#20201e", "#383834", "#54544f", "#6f6f69", "#8a8a85", "#a6a6a0", "#c4c4bf", "#e2e2de"]
+      },
+      "rule": {
+        "role": "neutral-border",
+        "displayName": "Hairline Rule",
+        "canonical": "#d4d3cc",
+        "tonalRamp": ["#1e1e1c", "#343432", "#545450", "#787874", "#9e9e9a", "#c0bfb7", "#d4d3cc", "#f0efe9"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display / Lead", "purpose": "Card lead headline (.card-lead) — the single most urgent action per subject." },
+      "title": { "displayName": "Title", "purpose": "Page h1. One per screen." },
+      "headline": { "displayName": "Headline / Masthead", "purpose": "Card masthead row (subject name), app masthead logo." },
+      "body": { "displayName": "Body", "purpose": "Lesson Markdown, flashcard text, list rows." },
+      "label": { "displayName": "Label", "purpose": "Card secondary line, chips, tabs, form inputs." },
+      "micro": { "displayName": "Micro", "purpose": "Info-strip labels, masthead date, group titles, status badges — one tier below the countdown badge." },
+      "mono": { "displayName": "Mono", "purpose": "Concept IDs (C-ARCH-0042), skill names (/schematizza), job output." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "opacity-hover", "value": "opacity 150ms", "purpose": "Fill buttons (primary, CTA pill) dim on hover instead of shifting color." },
+      { "name": "color-hover", "value": "color/border-color 150ms", "purpose": "Outline buttons, chips, nav links shift color/border on hover." },
+      { "name": "fase-tracker-fill", "value": "background 200ms", "purpose": "Transformation Raise: a FaseTracker segment fills verde when a pipeline phase's backlog clears." }
+    ],
+    "breakpoints": [
+      { "name": "container", "value": "900px", "purpose": "Max-width of main content; not a classic responsive breakpoint." },
+      { "name": "mobile", "value": "600px", "purpose": "Masthead compresses (date hides), card padding and lead type scale down." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Editorial Subject Card",
+      "kind": "custom",
+      "refersTo": "card-editoriale",
+      "description": "Signature component (Dashboard). Borderless, hairline-structured newspaper front-page card: masthead row (subject + countdown), lead headline, secondary line, three-column info strip with FaseTracker, action strip.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-head\"><h2 class=\"ds-card-nome\">Architettura</h2><span class=\"ds-countdown vicino\">Esame tra 18g</span></div><hr class=\"ds-card-rule\"/><a class=\"ds-card-lead\" href=\"#\">3 carte da ripassare</a><p class=\"ds-card-secondario\">+ 2 carte da curare</p><div class=\"ds-info-strip\"><div><span class=\"ds-info-label\">Pipeline</span><span class=\"ds-info-valore attenzione\">3</span><span class=\"ds-tracker\"><i class=\"on\"></i><i class=\"on\"></i><i></i><i></i><i></i></span></div><div><span class=\"ds-info-label\">Concetti</span><span class=\"ds-info-valore\">12</span></div><div><span class=\"ds-info-label\">Esami</span><span class=\"ds-info-valore\">3</span></div></div><div class=\"ds-card-azioni\"><a class=\"ds-btn-cta\" href=\"#\">Vai</a><a class=\"ds-chip\" href=\"#\">Pipeline</a><a class=\"ds-chip\" href=\"#\">Studia</a><a class=\"ds-chip\" href=\"#\">Concetti</a></div></article>",
+      "css": ".ds-card { background: #ffffff; border-radius: 6px; padding: 1.25rem 1.5rem 1.5rem; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; } .ds-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.8rem; } .ds-card-nome { font-size: 1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: #101010; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-countdown { font-size: 0.95rem; font-weight: 800; text-transform: uppercase; color: #5a5a55; white-space: nowrap; } .ds-countdown.vicino { color: #c96a1f; } .ds-countdown.urgente { color: #b3423a; } .ds-card-rule { height: 1px; background: #d4d3cc; border: none; margin: 0 0 0.9rem; } .ds-card-lead { display: block; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; color: #101010; text-decoration: none; margin-bottom: 0.45rem; transition: color 150ms; } .ds-card-lead:hover { color: #1e4080; } .ds-card-secondario { font-size: 0.9rem; color: #5a5a55; margin: 0 0 1rem; } .ds-info-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; padding: 0.85rem 0; border-top: 1px solid #d4d3cc; border-bottom: 1px solid #d4d3cc; margin-bottom: 1rem; } .ds-info-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #8a8a85; display: block; margin-bottom: 0.2rem; } .ds-info-valore { font-size: 1.1rem; font-weight: 800; color: #101010; display: block; } .ds-info-valore.attenzione { color: #c96a1f; } .ds-tracker { display: flex; gap: 3px; margin-top: 0.4rem; } .ds-tracker i { width: 13px; height: 3px; border-radius: 2px; background: #d4d3cc; display: inline-block; transition: background 200ms; } .ds-tracker i.on { background: #3f8f5f; } .ds-card-azioni { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; } .ds-btn-cta { display: inline-block; background: #1e4080; color: #ffffff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: opacity 150ms; } .ds-btn-cta:hover { opacity: 0.85; } .ds-chip { display: inline-block; padding: 0.3rem 0.7rem; border-radius: 999px; border: 1px solid #d4d3cc; color: #5a5a55; text-decoration: none; font-size: 0.8rem; } .ds-chip:hover { border-color: #5a5a55; color: #101010; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Single most important action on screen (e.g. Mostra risposta).",
+      "html": "<button class=\"ds-btn-primary\">Mostra risposta</button>",
+      "css": ".ds-btn-primary { display: inline-block; background: #1e4080; color: #ffffff; border: none; padding: 0.75rem 1.25rem; border-radius: 6px; font-size: 0.9rem; font-weight: 700; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-decoration: none; cursor: pointer; box-sizing: border-box; transition: opacity 150ms; } .ds-btn-primary:hover { opacity: 0.88; } .ds-btn-primary:focus-visible { outline: 2px solid #1e4080; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Contextual second-level action. White surface, visible border.",
+      "html": "<button class=\"ds-btn-secondary\">Carica</button>",
+      "css": ".ds-btn-secondary { display: inline-block; background: #ffffff; color: #101010; border: 1px solid #d4d3cc; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.88rem; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-decoration: none; cursor: pointer; box-sizing: border-box; transition: border-color 150ms, color 150ms; } .ds-btn-secondary:hover { border-color: #1e4080; color: #1e4080; } .ds-btn-secondary:focus-visible { outline: 2px solid #1e4080; outline-offset: 2px; }"
+    },
+    {
+      "name": "Action Chip",
+      "kind": "chip",
+      "refersTo": "chip-azione",
+      "description": "Contextual navigation link inside subject cards. Pill, thin border. Evidenzia variant: accent blue for the highlighted destination.",
+      "html": "<div style=\"display:flex;gap:0.4rem;\"><a class=\"ds-chip\" href=\"#\">Concetti</a><a class=\"ds-chip ds-chip-evidenzia\" href=\"#\">Ripassa 3</a></div>",
+      "css": ".ds-chip { display: inline-block; padding: 0.3rem 0.7rem; border-radius: 999px; border: 1px solid #d4d3cc; color: #5a5a55; text-decoration: none; font-size: 0.8rem; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; transition: border-color 150ms, color 150ms; } .ds-chip:hover { border-color: #5a5a55; color: #101010; } .ds-chip.ds-chip-evidenzia { border-color: #1e4080; color: #1e4080; font-weight: 600; } .ds-chip:focus-visible { outline: 2px solid #1e4080; outline-offset: 2px; }"
+    },
+    {
+      "name": "Tab Switcher",
+      "kind": "nav",
+      "refersTo": "tab-attiva",
+      "description": "Selects between Ripassa / Cura in Active Recall. Pill tabs inside a pill well.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab ds-tab-attiva\">Ripassa</button><button class=\"ds-tab\">Cura</button></div>",
+      "css": ".ds-tabs { display: inline-flex; gap: 0.25rem; background: #eeede9; border: 1px solid #d4d3cc; border-radius: 999px; padding: 0.2rem; } .ds-tab { background: none; border: none; padding: 0.4rem 0.9rem; border-radius: 999px; color: #5a5a55; font-size: 0.88rem; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; cursor: pointer; transition: background 150ms, color 150ms; } .ds-tab.ds-tab-attiva { background: #1e4080; color: #ffffff; font-weight: 600; } .ds-tab:hover:not(.ds-tab-attiva) { color: #101010; } .ds-tab:focus-visible { outline: 2px solid #1e4080; outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard text field. Used across Concetti, Active Recall filters, the schema editor.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Cerca per titolo, ID o tag…\" />",
+      "css": ".ds-input { width: 100%; padding: 0.55rem 0.8rem; border-radius: 6px; border: 1px solid #d4d3cc; background: #ffffff; color: #101010; font-size: 0.9rem; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; transition: border-color 150ms; } .ds-input::placeholder { color: #8a8a85; } .ds-input:focus { outline: none; border-color: #1e4080; }"
+    },
+    {
+      "name": "Masthead",
+      "kind": "nav",
+      "refersTo": "button-primary",
+      "description": "Sticky thin top strip: logo, nav, date, global review CTA pill. No underline active state (color+weight only).",
+      "html": "<nav class=\"ds-masthead\"><span class=\"ds-masthead-logo\">StudyLab</span><a class=\"ds-masthead-link active\" href=\"#\">Pipeline</a><a class=\"ds-masthead-link\" href=\"#\">Studia</a><a class=\"ds-masthead-link\" href=\"#\">Concetti</a><span class=\"ds-masthead-data\">16 SETTEMBRE 2026</span><a class=\"ds-masthead-cta\" href=\"#\">5 carte</a></nav>",
+      "css": ".ds-masthead { display: flex; align-items: center; gap: 1.5rem; padding: 0 1.5rem; height: 46px; border-bottom: 1px solid #d4d3cc; background: #f2f1ef; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; } .ds-masthead-logo { font-weight: 800; font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: #101010; text-decoration: none; margin-right: 0.5rem; } .ds-masthead-link { font-size: 0.88rem; color: #8a8a85; text-decoration: none; } .ds-masthead-link:hover { color: #5a5a55; } .ds-masthead-link.active { color: #101010; font-weight: 600; } .ds-masthead-data { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #8a8a85; margin-left: auto; } .ds-masthead-cta { font-size: 0.78rem; font-weight: 700; background: #1e4080; color: #ffffff; padding: 0.3rem 0.85rem; border-radius: 999px; text-decoration: none; transition: opacity 150ms; } .ds-masthead-cta:hover { opacity: 0.85; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "chip-azione",
+      "description": "Inline badge for lesson/job state. Variants: grezzo/queue (arancio), schematizzato/done (verde), running (accent), failed (rosso), default (neutral).",
+      "html": "<div style=\"display:flex;gap:0.5rem;flex-wrap:wrap;\"><span class=\"ds-badge ds-badge-grezzo\">Grezzo</span><span class=\"ds-badge ds-badge-schematizzato\">Schematizzato</span><span class=\"ds-badge ds-badge-running\">Running</span><span class=\"ds-badge ds-badge-failed\">Failed</span><span class=\"ds-badge\">Bozza</span></div>",
+      "css": ".ds-badge { font-size: 0.65rem; font-weight: 700; padding: 0.08rem 0.45rem; border-radius: 999px; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; background: #eeede9; color: #8a8a85; } .ds-badge-grezzo { background: color-mix(in srgb, #c96a1f 15%, transparent); color: #c96a1f; } .ds-badge-schematizzato { background: color-mix(in srgb, #3f8f5f 15%, transparent); color: #3f8f5f; } .ds-badge-running { background: color-mix(in srgb, #1e4080 15%, transparent); color: #1e4080; } .ds-badge-failed { background: color-mix(in srgb, #b3423a 15%, transparent); color: #b3423a; }"
+    },
+    {
+      "name": "Utility Concept Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Bordered card used on Concetti — the older, structurally-unchanged card idiom that coexists with the borderless Editorial Subject Card.",
+      "html": "<div class=\"ds-concept-card\"><div class=\"ds-concept-head\"><span class=\"ds-mono\">C-ARCH-0042</span></div><p class=\"ds-concept-titolo\">Data hazard RAW</p><div class=\"ds-concept-footer\"><span class=\"ds-badge-copertura\">4 carte</span></div></div>",
+      "css": ".ds-concept-card { background: #ffffff; border: 1px solid #d4d3cc; border-radius: 6px; padding: 0.85rem 1rem; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-sizing: border-box; transition: border-color 150ms; } .ds-concept-card:hover { border-color: #8a8a85; } .ds-mono { font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; color: #8a8a85; } .ds-concept-titolo { margin: 0.4rem 0; font-weight: 600; font-size: 0.92rem; line-height: 1.3; } .ds-badge-copertura { font-size: 0.7rem; padding: 0.12rem 0.45rem; border-radius: 999px; background: #eeede9; border: 1px solid #d4d3cc; color: #8a8a85; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Front Page",
+    "overview": "StudyLab now opens like a newspaper front page, not a lab notebook. Every subject is a story: the masthead row states the subject name and, when an exam is set, a countdown badge that outranks every other piece of metadata on the card. A hairline separates masthead from body. The lead headline — the single most urgent action for that subject — runs large and black (800 weight, tight tracking); everything else (secondary line, three-column pipeline/concepts/exams strip, action chips) sits visibly subordinate below a second hairline. This replaces an earlier equal-weight layout (pipeline strip, heatmap, four chips, and a countdown all competing at the same rank) that the user found confusionario; the build's whole point is a strict, legible priority order rather than a grid of equal cells.\n\nThe ground is cool and crisp (#f2f1ef), not warm — a deliberate departure from the previous avorio world. Structure is carried almost entirely by 1px hairlines and by whitespace, not by borders or shadows: the flagship subject cards on the Dashboard have no border at all, separated from each other only by a 1.25rem gap and from their own internal sections by hairline rules. Secondary surfaces (Materiali, Active Recall, Concetti) keep the older bordered-container idiom for lists, rows, and panels — restyled to the new palette and radius scale but structurally little-changed, so the vault's utility screens read as calmer, denser instruments next to the Dashboard's editorial front page.\n\nDark mode flips the ground/surface pair to near-black (#141418/#1c1c22) and headlines to warm off-white (#eceae6); the accent lightens to #7fa6dd to stay legible against dark surfaces. The four semantic status colors (verde/ambra/arancio/rosso) are untouched between light and dark — they are read the same way regardless of theme.",
+    "keyCharacteristics": [
+      "Newspaper editorial hierarchy: one dominant lead headline per subject card, everything else demoted",
+      "Hairlines (1px solid var(--rule)), not borders or shadows, do the Dashboard's structural work",
+      "Countdown badge is a visual tier of its own — larger and bolder than any other metadata on the card",
+      "System sans at extreme weights (800 for headlines/labels, 400 for body); no web fonts",
+      "Two coexisting card idioms: borderless editorial cards (Dashboard) and bordered utility cards (everywhere else)"
+    ],
+    "rules": [
+      { "name": "The Front Page Rule", "body": "Each subject card carries exactly one lead headline (.card-lead, 800/1.85rem) — the single most urgent action for that subject, chosen by a fixed priority order (ripasso dovuto > cura > cattura > schematizza > flashcard scoperte > \"tutto a posto\"). Never render two same-weight competing calls to action in one card.", "section": "colors" },
+      { "name": "The Countdown Dominance Rule", "body": "The exam countdown badge (0.95rem/800w) is deliberately larger and heavier than the metadata tier around it (info-strip labels at 0.62rem, masthead date at 0.72rem) — it must out-rank every other number on the card except the lead headline itself.", "section": "colors" },
+      { "name": "The Status Vocabulary Rule", "body": "Each status color keeps exactly one semantic role — verde mastery, ambra intermediate, arancio action-needed, rosso deficit/error. Never used decoratively or interchangeably.", "section": "colors" },
+      { "name": "The Mono Gate", "body": "Monospace appears only where the context is explicitly computational: stable IDs, CLI/skill names, job output. Never for stylistic emphasis.", "section": "typography" },
+      { "name": "The Hairline-as-Structure Rule", "body": "Inside an editorial card, structure is drawn with 1px solid var(--rule) rules between sections, never with a card border or a background-color step. Reserve border boxes for utility-surface containers (rows, panels, inputs).", "section": "elevation" },
+      { "name": "The No-Shadow Rule", "body": "No box-shadow anywhere in the system. Depth and separation come from hairlines and whitespace only.", "section": "elevation" },
+      { "name": "The Pill Hierarchy Rule", "body": "Pill shape is exclusive to interactive selection/filter elements and status labels. It never appears on a primary action button or a content card — pill signals \"selectable/categorizing,\" not \"primary.\"", "section": "shapes" }
+    ],
+    "dos": [
+      "Do give each subject card exactly one Display-tier lead headline; resolve competing candidates through the fixed priority order in calcLead, never render two.",
+      "Do make the exam countdown badge visually outrank all other metadata (Micro tier) on the card — see The Countdown Dominance Rule.",
+      "Do build structure inside editorial cards with 1px solid var(--rule) hairlines, not borders or background steps.",
+      "Do keep pill shape exclusive to chips, tabs, badges, and the CTA — never on a primary button or content card.",
+      "Do use monospace only for concept IDs, skill names, and job output.",
+      "Do show a filling FaseTracker segment (verde) when a pipeline phase's backlog reaches zero, not just a decrementing number."
+    ],
+    "donts": [
+      "Don't add box-shadow anywhere: the system has none, on either editorial or utility surfaces.",
+      "Don't put a border on an editorial subject card — its separation is whitespace (1.25rem gap) and hairlines only. (Utility-surface cards keep their border; that split is intentional, not a lapse to unify.)",
+      "Don't use the four status colors decoratively or interchangeably — each has exactly one semantic role.",
+      "Don't introduce a radius outside 3px / 6px / 999px — the old 10px/8px/4px scale is retired.",
+      "Don't introduce a kicker/eyebrow line above the lead headline: the masthead row (subject name + countdown) already carries that identifying role natively in this newspaper world — a separate small-caps eyebrow above .card-lead would be a redundant, uncredentialed addition, not a documented component."
+    ]
+  }
+}

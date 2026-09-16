@@ -89,7 +89,7 @@ export function Concetti() {
                   <span className="barra-confidenza" style={{ '--val': c.confidenza } as React.CSSProperties} />
                   <span className="nota">{c.confidenza}/5</span>
                   <span className={c.numFlashcard === 0 ? 'badge-copertura vuota' : 'badge-copertura'}>
-                    {c.numFlashcard === 0 ? '⚠ nessuna carta' : `${c.numFlashcard} carte`}
+                    {c.numFlashcard === 0 ? 'nessuna carta' : `${c.numFlashcard} carte`}
                   </span>
                 </div>
               </div>

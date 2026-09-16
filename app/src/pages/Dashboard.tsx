@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, PipelineMateria, StatoResponse } from '../lib/api';
+import { api, MateriaStato, PipelineMateria } from '../lib/api';
 
-// La dashboard è l'hub: non solo lo stato delle flashcard, ma una vista su
-// ogni fase della pipeline di studio (cattura → schematizza → flashcard →
-// compattazione → esami → cura → ripasso), con scorciatoie dirette a ciò
-// che c'è da fare (vedi feedback utente: "tutte le cose che può fare e
-// tutto quello che deve fare").
+// "The Front Page": ogni materia si apre come la prima pagina di un
+// giornale — l'azione più urgente è il titolo in grande, il resto va in
+// una striscia informativa sotto la piega. Sostituisce la vecchia griglia
+// a pari peso (pipeline strip + heatmap + countdown + 4 chip), che
+// costringeva a leggere ogni cella per capire cosa fare (vedi feedback
+// utente: "confusionario"). Vedi .impeccable/briefs/app-src.md.
 export function Dashboard() {
-  const [stato, setStato] = useState<StatoResponse | null>(null);
+  const [stato, setStato] = useState<{ materie: MateriaStato[] } | null>(null);
   const [pipeline, setPipeline] = useState<PipelineMateria[] | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
 
@@ -22,139 +23,164 @@ export function Dashboard() {
   }, []);
 
   if (errore) return <p className="errore">Errore: {errore}</p>;
-  if (!stato || !pipeline) return <p>Caricamento…</p>;
+  if (!stato || !pipeline) return <p className="caricamento">Caricamento…</p>;
 
-  const totDovute = stato.materie.reduce((s, m) => s + m.dovute, 0);
-  const totNuove = stato.materie.reduce((s, m) => s + m.nuove, 0);
-  const totProposta = stato.materie.reduce((s, m) => s + m.proposta, 0);
+  if (stato.materie.length === 0) {
+    return (
+      <div className="dashboard-vuoto">
+        <p>
+          Nessuna materia ancora. Crea una cartella in <code>materie/</code> per iniziare.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="pagina">
-      <h1>Dashboard</h1>
-      <p className="sottotitolo">{stato.oggi}</p>
-
-      <div className="azioni-rapide">
-        {totDovute + totNuove > 0 ? (
-          <Link className="bottone-grande" to="/active-recall?tab=ripassa">
-            Ripassa ora — {totDovute} da rivedere, {totNuove} nuove
-          </Link>
-        ) : (
-          <p className="tutto-fatto">Ripasso di oggi completato. 🎉</p>
-        )}
-        {totProposta > 0 && (
-          <Link className="bottone-secondario" to="/active-recall?tab=cura">
-            {totProposta} carte da curare
-          </Link>
-        )}
-        <Link className="bottone-secondario" to="/concetti">
-          Esplora i concetti
-        </Link>
-      </div>
-
-      <div className="griglia-materie">
-        {stato.materie.map((m) => {
-          const p = pipeline.find((x) => x.slug === m.slug);
-          return (
-            <div key={m.slug} className="scheda-materia">
-              <div className="scheda-materia-intestazione">
-                <h2>{m.nome}</h2>
-                {m.data_esame && m.giorniAllEsame !== null && <Countdown data={m.data_esame} giorni={m.giorniAllEsame} />}
-              </div>
-
-              {p && <PipelineStrip slug={m.slug} p={p} />}
-              {p && <HeatmapConfidenza slug={m.slug} concetti={p.heatmapConfidenza} />}
-
-              <div className="scheda-materia-azioni">
-                <Link className="chip-azione" to={`/materiali?materia=${m.slug}`}>
-                  Materiali
-                </Link>
-                <Link
-                  className={`chip-azione ${p && p.ripasso.dovute + p.ripasso.nuove > 0 ? 'evidenzia' : ''}`}
-                  to={`/active-recall?tab=ripassa&materia=${m.slug}`}
-                >
-                  Ripassa {p ? p.ripasso.dovute + p.ripasso.nuove : ''}
-                </Link>
-                <Link
-                  className={`chip-azione ${p && p.cura.daCurare > 0 ? 'evidenzia' : ''}`}
-                  to={`/active-recall?tab=cura&materia=${m.slug}`}
-                >
-                  Cura {p ? p.cura.daCurare : ''}
-                </Link>
-                <Link className="chip-azione" to={`/concetti?materia=${m.slug}`}>
-                  Concetti
-                </Link>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="stack-materie">
+      {stato.materie.map((m) => {
+        const p = pipeline.find((x) => x.slug === m.slug);
+        return p ? <CardMateria key={m.slug} m={m} p={p} /> : null;
+      })}
     </div>
   );
 }
 
-// Striscia delle fasi dello studio (PIANO.md §2), tutte azionabili da
-// Materiali (via coda job) — Esami (Fase 6: /estrai-esami, /simula-esame,
-// /correggi) mostra i PDF ancora da estrarre, o le simulazioni generate
-// ancora da correggere se l'estrazione è già coperta.
-function PipelineStrip({ slug, p }: { slug: string; p: PipelineMateria }) {
-  const fasi: { label: string; count: number; nota?: string }[] = [
-    { label: 'Cattura', count: p.cattura.daProcessare, nota: 'clicca per caricare o lanciare /cattura' },
-    { label: 'Schematizza', count: p.schematizza.daSchematizzare, nota: 'clicca per schematizzare le lezioni grezze' },
-    { label: 'Flashcard', count: p.flashcard.concettiSenzaCarte, nota: 'concetti senza carte — clicca per generarle' },
-    { label: 'Compattazione', count: p.compattazione.settimaneSenzaSintesi, nota: 'settimane senza sintesi — clicca per compattarle' },
-    {
-      label: 'Esami',
-      count: p.esami.daEstrarre > 0 ? p.esami.daEstrarre : p.esami.daCorreggere,
-      nota:
-        p.esami.daEstrarre > 0
-          ? 'PDF d\'esame non ancora estratti — clicca per estrarli'
-          : 'simulazioni generate ancora da correggere',
-    },
+type Lead = { testo: string; href: string; secondario: string; ok: boolean };
+
+// Priorità della testata (STORY del brief): ripasso dovuto batte tutto
+// (è la cosa che degrada se rimandata), poi cura, poi le fasi a monte
+// della pipeline nell'ordine in cui lo studente le percorre dopo lezione.
+function calcLead(p: PipelineMateria, slug: string): Lead {
+  const totRipasso = p.ripasso.dovute + p.ripasso.nuove;
+  if (totRipasso > 0) {
+    return {
+      testo: `${totRipasso} carte da ripassare`,
+      href: `/active-recall?tab=ripassa&materia=${slug}`,
+      secondario: p.cura.daCurare > 0 ? `+ ${p.cura.daCurare} carte da curare` : '',
+      ok: false,
+    };
+  }
+  if (p.cura.daCurare > 0) {
+    return {
+      testo: `${p.cura.daCurare} carte da curare`,
+      href: `/active-recall?tab=cura&materia=${slug}`,
+      secondario: '',
+      ok: false,
+    };
+  }
+  if (p.cattura.daProcessare > 0) {
+    return {
+      testo: `${p.cattura.daProcessare} lezioni grezze`,
+      href: `/materiali?materia=${slug}`,
+      secondario: p.schematizza.daSchematizzare > 0 ? `${p.schematizza.daSchematizzare} da schematizzare` : '',
+      ok: false,
+    };
+  }
+  if (p.schematizza.daSchematizzare > 0) {
+    return {
+      testo: `${p.schematizza.daSchematizzare} da schematizzare`,
+      href: `/materiali?materia=${slug}`,
+      secondario: '',
+      ok: false,
+    };
+  }
+  if (p.flashcard.concettiSenzaCarte > 0) {
+    return {
+      testo: `${p.flashcard.concettiSenzaCarte} concetti senza flashcard`,
+      href: `/materiali?materia=${slug}`,
+      secondario: 'Genera le carte dai concetti scoperti',
+      ok: false,
+    };
+  }
+  return {
+    testo: 'Tutto a posto',
+    href: `/concetti?materia=${slug}`,
+    secondario: `${p.heatmapConfidenza.length} concetti attivi`,
+    ok: true,
+  };
+}
+
+function CardMateria({ m, p }: { m: MateriaStato; p: PipelineMateria }) {
+  const lead = calcLead(p, m.slug);
+  const totPipeline = p.cattura.daProcessare + p.schematizza.daSchematizzare + p.flashcard.concettiSenzaCarte;
+  const totConcetti = p.heatmapConfidenza.length;
+  const totEsami = p.esami.estratti;
+
+  const giorni = m.giorniAllEsame;
+  const countdownClass = giorni === null || giorni < 0 ? '' : giorni <= 7 ? 'urgente' : giorni <= 30 ? 'vicino' : '';
+  const countdownTesto =
+    giorni === null ? null : giorni < 0 ? 'Esame passato' : giorni === 0 ? 'Esame oggi' : `Esame tra ${giorni}g`;
+
+  return (
+    <article className="card-materia">
+      <div className="card-intestazione">
+        <h2 className="card-nome">{m.nome}</h2>
+        {countdownTesto && (
+          <span className={`card-countdown-badge ${countdownClass}`} title={m.data_esame || undefined}>
+            {countdownTesto}
+          </span>
+        )}
+      </div>
+
+      <hr className="card-rule" />
+
+      <Link to={lead.href} className={`card-lead${lead.ok ? ' ok' : ''}`}>
+        {lead.testo}
+      </Link>
+      <p className="card-secondario">{lead.secondario || ' '}</p>
+
+      <div className="card-info-strip">
+        <div>
+          <span className="info-col-label">Pipeline</span>
+          <span className={`info-col-valore${totPipeline > 0 ? ' attenzione' : ''}`}>{totPipeline}</span>
+          <FaseTracker p={p} />
+        </div>
+        <div>
+          <span className="info-col-label">Concetti</span>
+          <span className="info-col-valore">{totConcetti}</span>
+        </div>
+        <div>
+          <span className="info-col-label">Esami</span>
+          <span className="info-col-valore">{totEsami}</span>
+        </div>
+      </div>
+
+      <div className="card-azioni">
+        {!lead.ok && (
+          <Link to={lead.href} className="btn-cta">
+            Vai
+          </Link>
+        )}
+        <Link className="chip-azione" to={`/materiali?materia=${m.slug}`}>
+          Pipeline
+        </Link>
+        <Link className="chip-azione" to={`/active-recall?tab=ripassa&materia=${m.slug}`}>
+          Studia
+        </Link>
+        <Link className="chip-azione" to={`/concetti?materia=${m.slug}`}>
+          Concetti
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+// Transformation Raise (brief): il completamento di una fase pipeline non è
+// solo un numero che scende, è la fase che avanza visibilmente — un
+// segmento si accende quando il relativo arretrato si azzera.
+function FaseTracker({ p }: { p: PipelineMateria }) {
+  const fasi = [
+    p.cattura.daProcessare === 0,
+    p.schematizza.daSchematizzare === 0,
+    p.flashcard.concettiSenzaCarte === 0,
+    p.compattazione.settimaneSenzaSintesi === 0,
+    p.esami.daEstrarre === 0,
   ];
   return (
-    <div className="pipeline-strip">
-      {fasi.map((f) => (
-        <Link
-          key={f.label}
-          to={`/materiali?materia=${slug}`}
-          className={`pipeline-fase ${f.count > 0 ? 'attenzione' : 'ok'}`}
-          title={f.nota}
-        >
-          <span className="pipeline-numero">{f.count}</span>
-          <span className="pipeline-label">{f.label}</span>
-        </Link>
+    <span className="fase-tracker" title="Cattura → Schematizza → Flashcard → Compattazione → Esami">
+      {fasi.map((avanzata, i) => (
+        <span key={i} className={`fase-tracker-segmento${avanzata ? ' avanzata' : ''}`} />
       ))}
-    </div>
-  );
-}
-
-// Countdown esame (Fase 7): giorni interi calcolati lato server con
-// aritmetica su componenti data locali (cli/lib/date.js, giorniTra) — mai
-// un giro per UTC/toISOString, vedi l'insidia già presa a Fase 3
-// (PIANO.md §3) per qualunque calcolo di date a grana giornaliera.
-function Countdown({ data, giorni }: { data: string; giorni: number }) {
-  const urgenza = giorni < 0 ? '' : giorni <= 7 ? 'countdown-urgente' : giorni <= 30 ? 'countdown-vicino' : '';
-  const testo = giorni < 0 ? `Esame passato da ${-giorni}g` : giorni === 0 ? 'Esame oggi' : `Esame tra ${giorni}g`;
-  return (
-    <span className={`countdown ${urgenza}`} title={data}>
-      {testo}
     </span>
-  );
-}
-
-// Heatmap confidenza (Fase 7): un quadratino per concetto `attivo`,
-// colorato per fascia di confidenza — scansione visiva rapida dei punti
-// deboli, senza dover aprire Concetti. Grigio = mai testato (confidenza
-// resta a 0 finché /correggi non l'ha misurata almeno una volta, vedi
-// CLAUDE.md) — non è "non capito", solo "non ancora misurato", stessa
-// distinzione fatta in /compatta per i nodi deboli.
-function HeatmapConfidenza({ slug, concetti }: { slug: string; concetti: { id: string; titolo: string; confidenza: number }[] }) {
-  if (concetti.length === 0) return null;
-  return (
-    <Link to={`/concetti?materia=${slug}`} className="heatmap-confidenza" title="Confidenza dei concetti — clicca per esplorarli">
-      {concetti.map((c) => (
-        <span key={c.id} className={`heatmap-cella confidenza-${c.confidenza}`} title={`${c.titolo} — confidenza ${c.confidenza}/5`} />
-      ))}
-    </Link>
   );
 }

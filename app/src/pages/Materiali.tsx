@@ -48,7 +48,7 @@ export function Materiali() {
 
   return (
     <div className="pagina">
-      <h1>Materiali</h1>
+      <h1>Pipeline</h1>
       <div className="barra-controlli">
         <select className="select-materia" value={materiaSel} onChange={(e) => setMateria(e.target.value)}>
           {materie.map((m) => (
@@ -362,21 +362,29 @@ function AzioniPipeline({
       <h2 className="gruppo-titolo">Azioni</h2>
       <div className="azioni-pipeline">
         <button
-          className="chip-azione"
+          className={`chip-azione${pipeline.cattura.daProcessare === 0 ? ' completata' : ''}`}
           disabled={pipeline.cattura.daProcessare === 0 || inCorso === 'cattura'}
           onClick={() => accoda('cattura', { materia }, 'cattura')}
         >
-          {inCorso === 'cattura' ? 'Accodo…' : `Cattura (${pipeline.cattura.daProcessare} in attesa)`}
+          {inCorso === 'cattura'
+            ? 'Accodo…'
+            : pipeline.cattura.daProcessare === 0
+            ? 'Cattura — completata'
+            : `Cattura (${pipeline.cattura.daProcessare} in attesa)`}
         </button>
         <button
-          className="chip-azione"
+          className={`chip-azione${pipeline.flashcard.concettiSenzaCarte === 0 ? ' completata' : ''}`}
           disabled={pipeline.flashcard.concettiSenzaCarte === 0 || inCorso === 'flashcard'}
           onClick={() => accoda('genera-flashcard', { materia }, 'flashcard')}
         >
-          {inCorso === 'flashcard' ? 'Accodo…' : `Genera flashcard (${pipeline.flashcard.concettiSenzaCarte} concetti scoperti)`}
+          {inCorso === 'flashcard'
+            ? 'Accodo…'
+            : pipeline.flashcard.concettiSenzaCarte === 0
+            ? 'Flashcard — completata'
+            : `Genera flashcard (${pipeline.flashcard.concettiSenzaCarte} concetti scoperti)`}
         </button>
         <button
-          className="chip-azione"
+          className={`chip-azione${!pipeline.compattazione.prossima ? ' completata' : ''}`}
           disabled={!pipeline.compattazione.prossima || inCorso === 'compatta'}
           onClick={() =>
             pipeline.compattazione.prossima &&
@@ -386,14 +394,20 @@ function AzioniPipeline({
         >
           {inCorso === 'compatta'
             ? 'Accodo…'
+            : !pipeline.compattazione.prossima
+            ? 'Compattazione — completata'
             : `Compatta (${pipeline.compattazione.settimaneSenzaSintesi} settimane senza sintesi)`}
         </button>
         <button
-          className="chip-azione"
+          className={`chip-azione${pipeline.esami.daEstrarre === 0 ? ' completata' : ''}`}
           disabled={pipeline.esami.daEstrarre === 0 || inCorso === 'estrai-esami'}
           onClick={() => accoda('estrai-esami', { materia }, 'estrai-esami')}
         >
-          {inCorso === 'estrai-esami' ? 'Accodo…' : `Estrai esami (${pipeline.esami.daEstrarre} PDF non estratti)`}
+          {inCorso === 'estrai-esami'
+            ? 'Accodo…'
+            : pipeline.esami.daEstrarre === 0
+            ? 'Estrazione — completata'
+            : `Estrai esami (${pipeline.esami.daEstrarre} PDF non estratti)`}
         </button>
         <button
           className="chip-azione"

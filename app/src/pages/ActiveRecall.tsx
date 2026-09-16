@@ -45,7 +45,7 @@ export function ActiveRecall() {
 
   return (
     <div className="pagina">
-      <h1>Active Recall</h1>
+      <h1>Studia</h1>
       <div className="barra-controlli">
         <div className="tabs">
           <button className={tab === 'ripassa' ? 'tab attiva' : 'tab'} onClick={() => setTab('ripassa')}>
@@ -137,7 +137,7 @@ function PannelloRipassa({ materiaFiltro }: { materiaFiltro?: string }) {
   if (!carta) {
     return (
       <div className="pannello-centrato">
-        <h2>{fatte > 0 ? 'Sessione completata! 🎉' : 'Tutto ripassato per oggi. 🎉'}</h2>
+        <h2>{fatte > 0 ? 'Sessione completata' : 'Tutto ripassato per oggi'}</h2>
         {fatte > 0 && <p>{fatte} carte ripassate.</p>}
       </div>
     );
@@ -240,10 +240,10 @@ function PannelloCura({ materiaFiltro }: { materiaFiltro?: string }) {
             </div>
             <div className="riga-cura-azioni">
               <button className="approva" onClick={() => decidi(c, 'approva')}>
-                ✓ Approva
+                Approva
               </button>
               <button className="scarta" onClick={() => decidi(c, 'scarta')}>
-                ✕ Scarta
+                Scarta
               </button>
             </div>
           </div>
