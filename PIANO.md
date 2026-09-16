@@ -18,7 +18,7 @@ trasformazione. Nessuna API a pagamento, nessun dato fuori dal PC.
 | Skill `/compatta` | `.claude/skills/compatta/` | ✅ |
 | Skill `/estrai-esami`, `/simula-esame`, `/correggi` | `.claude/skills/` | ✅ |
 | Statistiche avanzate in dashboard (heatmap confidenza, countdown esame) | `app/src/pages/Dashboard.tsx` | ✅ |
-| Deploy sul server Ubuntu (Docker, Tailscale) | — | ⬜ |
+| Deploy sul server Ubuntu (Docker, Tailscale) | `app/Dockerfile`, `worker/Dockerfile`, `deploy/docker-compose.yml` | ✅ |
 | Editor/digitalizzazione schemi | — | ⬜ |
 
 Dettagli, motivazioni e alternative scartate per ogni punto sono nelle
@@ -356,7 +356,7 @@ mai copie locali sincronizzate.
 | 5 | ✅ `/compatta` settimanale e mensile | 1 sera | Da fine primo mese |
 | 6 | ✅ `/estrai-esami` + `/simula-esame` + `/correggi`, integrate in dashboard e coda job | 2-3 sere | Sotto sessione |
 | 7 | ✅ Statistiche avanzate (heatmap confidenza, countdown esame) | 2 sere | Nice to have — dashboard base già in Fase 4 |
-| 8 | 🟡 Deploy su home server + accesso remoto (§8) — **la coda job + worker sono già implementati e usabili in locale**; resta da fare solo il container Docker + Tailscale sul server Ubuntu | 1-2 sere | Sì, da tutti i dispositivi |
+| 8 | ✅ Deploy su home server + accesso remoto (§8): container Docker (`app/Dockerfile`, `worker/Dockerfile`, `deploy/docker-compose.yml`) + esposizione via `tailscale serve` | 1-2 sere | Sì, da tutti i dispositivi |
 | 9 | Editor di schemi e digitalizzazione (§9) | 3-4 sere | Chiude il ciclo |
 
 **Usa il sistema dalla Fase 1.** Il rischio numero uno di questo progetto è
@@ -472,7 +472,9 @@ nulla sul router.
 
 ### Architettura dei container
 
-Tre servizi, un volume.
+Tre servizi in astratto (web, worker, Tailscale), ma Tailscale gira già
+sull'host (come nel tuo caso), quindi **niente sidecar**: solo due, in
+[deploy/docker-compose.yml](deploy/docker-compose.yml).
 
 ```
 /srv/studylab/
@@ -482,34 +484,50 @@ Tre servizi, un volume.
 └── claude-config/          # credenziali e config di Claude Code (persistenti)
 ```
 
-Tailscale gira già sull'host (come nel tuo caso), quindi **niente sidecar**:
-solo due servizi.
+✅ **Implementato** in [app/Dockerfile](app/Dockerfile),
+[worker/Dockerfile](worker/Dockerfile) e
+[deploy/docker-compose.yml](deploy/docker-compose.yml), con una differenza
+voluta rispetto allo schizzo iniziale qui sotto: invece di montare
+*l'intero* vault dentro entrambi i container (che imporrebbe di bakare
+zero codice, e quindi reinstallare `node_modules`/rifare `npm run build`
+a ogni avvio), le due immagini bakano **solo codice** (`app/`, `cli/`,
+`.claude/`, `CLAUDE.md`) al momento della build, e in `docker-compose.yml`
+vengono montati da bind mount **solo i dati** (`materie/`, `srs/`,
+`_jobs/`). Risultato pratico: `docker compose up -d --build` dopo un
+`git pull` aggiorna il codice (skill comprese), mentre i contenuti dello
+studente restano sempre quelli sul disco del server, mai dentro
+l'immagine. Il worker inoltre gira come `root` (non `/home/node`) per
+evitare grane di permessi sui bind mount con un utente non-root — accettabile
+per un container mono-utente raggiungibile solo dalla propria tailnet, vedi
+"Sicurezza e igiene" sotto.
+
+Schema semplificato (la versione vera, con contesti di build e percorsi
+relativi corretti, è nel file):
 
 ```yaml
 services:
   web:
-    # UI + API: legge/scrive i .md e srs/state.json
-    build: ../app
+    build: { context: .., dockerfile: app/Dockerfile }
     volumes:
-      - /srv/studylab/vault:/vault
+      - ../materie:/vault/materie
+      - ../srs:/vault/srs
+      - ../_jobs:/vault/_jobs
     environment:
-      - VAULT_PATH=/vault
+      - API_PORT=8081
     ports:
-      - "127.0.0.1:8080:8080"   # esposto solo via Tailscale Serve
+      - "127.0.0.1:8081:8081"   # esposto solo via Tailscale Serve
     restart: unless-stopped
 
   worker:
-    # Claude Code headless: consuma la coda dei job
-    build: ../worker
+    build: { context: .., dockerfile: worker/Dockerfile }
     volumes:
-      - /srv/studylab/vault:/vault
-      - /srv/studylab/claude-config:/home/node/.claude
-    environment:
-      - VAULT_PATH=/vault
+      - ../materie:/vault/materie
+      - ../_jobs:/vault/_jobs
+      - ../../claude-config:/root/.claude
     restart: unless-stopped
 ```
 
-L'immagine del worker è semplicemente Node + `npm i -g @anthropic-ai/claude-code`.
+L'immagine del worker è Node + `npm i -g @anthropic-ai/claude-code`.
 
 **Non basta però solo Node.** Il worker è quello che esegue `/cattura` su
 tutto ciò che l'utente butta in `00-inbox/` (foto, PDF, slide), e due
@@ -643,6 +661,11 @@ arretrate e andare a dormire.
 
 ### Deploy sul tuo server (Ubuntu + Tailscale già attivo)
 
+✅ **Eseguito e verificato end-to-end** sul server reale: build, avvio,
+login di Claude nel worker, un job (`/genera-flashcard`) accodato dall'API
+e completato dal worker, esposizione via `tailscale serve`. I passi sotto
+sono quelli effettivamente usati.
+
 Poiché Tailscale gira già sull'host, **non serve il sidecar** del compose qui
 sopra: elimina quel servizio. Il resto è lineare.
 
@@ -665,8 +688,9 @@ docker compose exec -it worker claude
 #   completi il device-code dal browser; le credenziali restano
 #   in /srv/studylab/claude-config e sopravvivono ai rebuild
 
-# 5. Esposizione via Tailscale, con HTTPS valido
-sudo tailscale serve --bg 8080
+# 5. Esposizione via Tailscale, con HTTPS valido — 8081, non 8080: è la
+#    porta di app/server/index.js (API_PORT nel compose, vedi CLAUDE.md)
+sudo tailscale serve --bg 8081
 #   → https://<nome-server>.<tuo-tailnet>.ts.net
 ```
 
