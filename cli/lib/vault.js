@@ -228,6 +228,11 @@ function walkFiles(dir) {
 }
 
 function esamiOriginali(slug) {
+  // Valida la materia (whitelist su listMaterie(), non sul solo formato
+  // della stringa): senza questo controllo un `materia` costruito ad arte
+  // nella query di un endpoint HTTP potrebbe far risalire `path.join` fuori
+  // da MATERIE_DIR e camminare qualunque cartella del filesystem.
+  if (!listMaterie().includes(slug)) throw new Error('materia non valida');
   const materiaDir = path.join(MATERIE_DIR, slug);
   const dir = path.join(materiaDir, '05-esami', 'originali');
   return walkFiles(dir).map((f) => path.relative(materiaDir, f).split(path.sep).join('/'));
@@ -323,15 +328,17 @@ function listSchemi(materiaFiltro) {
   return out;
 }
 
-function slugifyTitolo(titolo) {
-  const slug = titolo
+function slugify(testo) {
+  return testo
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-  return slug || 'schema';
+    .replace(/^-+|-+$/g, '');
+}
+
+function slugifyTitolo(titolo) {
+  return slugify(titolo).slice(0, 60) || 'schema';
 }
 
 // Salva un outline scritto direttamente nell'editor della dashboard (non
@@ -378,6 +385,74 @@ function inboxDaProcessare(slug) {
 
 const SCHEMI_DIR_NAME = '07-schemi';
 
+const TIPI_ESAME = ['orale', 'scritto', 'misto'];
+
+// Scrive un valore scalare per materia.yml nello stesso formato piatto che
+// readMateriaYml sa leggere (vedi sopra): il parser non gestisce escape,
+// quindi una stringa con virgolette incorporate perde le virgolette invece
+// di spezzare il file.
+function scalareYml(valore) {
+  return `"${String(valore).replace(/"/g, "'")}"`;
+}
+
+// Crea una nuova materia da zero: la cartella con tutte le sottocartelle
+// del vault (vedi struttura in CLAUDE.md) e un materia.yml compatibile col
+// parser di readMateriaYml. Usata da POST /api/materie (creazione dalla
+// web app, non da una skill): per questo valida ogni campo qui, non si può
+// contare su un frontmatter già corretto scritto da Claude.
+function creaMateria({ nome, prefissoId, docente, tipoEsame, dataEsame, carteNuoveAlGiorno, note }) {
+  if (!nome || !nome.trim()) throw new Error('nome obbligatorio');
+  const slug = slugify(nome).slice(0, 40);
+  if (!slug) throw new Error('nome non valido: nessun carattere alfanumerico utilizzabile per lo slug');
+  if (listMaterie().includes(slug)) throw new Error(`una materia "${slug}" esiste già`);
+
+  const prefisso = String(prefissoId || '').trim().toUpperCase();
+  if (!/^[A-Z]{2,8}$/.test(prefisso)) throw new Error('prefisso ID non valido: 2-8 lettere (es. ARCH)');
+
+  if (!TIPI_ESAME.includes(tipoEsame)) throw new Error(`tipo esame non valido (${TIPI_ESAME.join('|')})`);
+
+  if (dataEsame && !/^\d{4}-\d{2}-\d{2}$/.test(dataEsame)) throw new Error('data esame non valida (AAAA-MM-GG)');
+
+  const cap = parseInt(carteNuoveAlGiorno, 10);
+  if (!Number.isInteger(cap) || cap < 1 || cap > 200) throw new Error('carte nuove al giorno non valido (1-200)');
+
+  const materiaDir = path.join(MATERIE_DIR, slug);
+  for (const sotto of [
+    '00-inbox',
+    '01-lezioni',
+    '02-concetti',
+    '03-sintesi',
+    '04-flashcard',
+    path.join('05-esami', 'originali'),
+    path.join('05-esami', 'estratti'),
+    path.join('05-esami', 'generati'),
+    '06-simulazioni',
+    SCHEMI_DIR_NAME,
+  ]) {
+    fs.mkdirSync(path.join(materiaDir, sotto), { recursive: true });
+  }
+
+  const righeNote = (note || '').trim() || 'Nessuna nota.';
+  const contenuto = [
+    `nome: ${scalareYml(nome.trim())}`,
+    `slug: ${slug}`,
+    `prefisso_id: ${prefisso}        # usato per gli ID dei concetti: C-${prefisso}-NNNN`,
+    `docente: ${scalareYml((docente || '').trim())}`,
+    `tipo_esame: ${tipoEsame}        # orale | scritto | misto`,
+    'struttura_esame: |',
+    '  Da compilare.',
+    `data_esame: ${dataEsame || 'null'}           # AAAA-MM-GG, da compilare quando nota`,
+    'prossimo_ultimo_id: 0      # ultimo ID concetto assegnato; la skill lo incrementa',
+    `carte_nuove_al_giorno: ${cap}   # cap SRS, vedi PIANO.md §3`,
+    'note: |',
+    `  ${righeNote}`,
+    '',
+  ].join('\n');
+  fs.writeFileSync(path.join(materiaDir, 'materia.yml'), contenuto, 'utf8');
+
+  return { slug };
+}
+
 const SEZIONI_LEGGIBILI = {
   lezioni: '01-lezioni',
   concetti: '02-concetti',
@@ -403,6 +478,59 @@ function leggiContenuto(materia, sezione, file) {
   const reale = fs.readdirSync(dir).find((f) => f === file);
   if (!reale) throw new Error('file non trovato');
   return fs.readFileSync(path.join(dir, reale), 'utf8');
+}
+
+// Elimina un file di una sezione del vault, con la stessa validazione di
+// leggiContenuto (whitelist di sezione + nome che deve combaciare con una
+// voce reale della cartella, mai un percorso costruito dalla request).
+// L'utente ha chiesto di poter eliminare *qualunque* elemento dall'interno
+// della web app, inclusi gli originali in 05-esami/originali/ — che restano
+// di sola lettura solo per le SKILL (CLAUDE.md regola #2: non modificarli
+// né rinominarli durante l'estrazione), non per una cancellazione
+// volontaria dell'utente dalla propria interfaccia di gestione.
+// Alcune sezioni hanno un file "gemello" che va rimosso insieme per non
+// lasciare orfani: uno schema digitalizzato porta con sé l'originale
+// affiancato (stesso slug, altra estensione, vedi CLAUDE.md), una consegna
+// generata porta con sé la sua soluzione.
+function eliminaFile(materia, sezione, file) {
+  if (!listMaterie().includes(materia)) throw new Error('materia non valida');
+
+  if (sezione === 'esami-originali') {
+    const reale = esamiOriginali(materia).find((f) => f === file);
+    if (!reale) throw new Error('file non trovato');
+    fs.unlinkSync(path.join(MATERIE_DIR, materia, reale));
+    return { eliminati: [reale] };
+  }
+
+  const cartella = SEZIONI_LEGGIBILI[sezione];
+  if (!cartella) throw new Error('sezione non valida');
+  const dir = path.join(MATERIE_DIR, materia, cartella);
+  if (!fs.existsSync(dir)) throw new Error('sezione vuota');
+  const reale = fs.readdirSync(dir).find((f) => f === file);
+  if (!reale) throw new Error('file non trovato');
+
+  const eliminati = [reale];
+  fs.unlinkSync(path.join(dir, reale));
+
+  if (sezione === 'schemi') {
+    const slug = reale.replace(/\.md$/, '');
+    for (const f of fs.readdirSync(dir)) {
+      if (f !== reale && f.startsWith(`${slug}.`)) {
+        fs.unlinkSync(path.join(dir, f));
+        eliminati.push(f);
+      }
+    }
+  }
+
+  if (sezione === 'esami-generati' && reale.endsWith('-consegna.md')) {
+    const soluzione = reale.replace(/-consegna\.md$/, '-soluzione.md');
+    if (fs.existsSync(path.join(dir, soluzione))) {
+      fs.unlinkSync(path.join(dir, soluzione));
+      eliminati.push(soluzione);
+    }
+  }
+
+  return { eliminati };
 }
 
 // Cartella 00-inbox/ di una materia, validata — usata dall'upload. Mai
@@ -454,5 +582,8 @@ module.exports = {
   salvaSchemaOutline,
   inboxDaProcessare,
   leggiContenuto,
+  eliminaFile,
+  creaMateria,
+  slugify,
   inboxDir,
 };

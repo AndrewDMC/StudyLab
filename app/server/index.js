@@ -231,6 +231,46 @@ app.get('/api/pipeline', (req, res) => {
   res.json({ materie });
 });
 
+// POST /api/materie { nome, prefissoId, docente, tipoEsame, dataEsame, carteNuoveAlGiorno, note }
+// Crea una nuova materia da zero (cartelle + materia.yml) — la "creazione
+// diretta dall'interfaccia" richiesta dall'utente, non solo materie già
+// presenti nel vault come finora.
+app.post('/api/materie', (req, res) => {
+  const { nome, prefissoId, docente, tipoEsame, dataEsame, carteNuoveAlGiorno, note } = req.body || {};
+  try {
+    const r = vault.creaMateria({ nome, prefissoId, docente, tipoEsame, dataEsame, carteNuoveAlGiorno, note });
+    res.json({ ok: true, ...r });
+  } catch (e) {
+    res.status(400).json({ errore: e.message });
+  }
+});
+
+// GET /api/esami-originali?materia=slug — PDF/scan in 05-esami/originali/
+// (percorso relativo alla radice della materia, sottocartelle libere —
+// vedi vault.esamiOriginali). Serve al viewer "Materiali" per elencarli ed
+// eliminarli dalla stessa interfaccia, non solo agli estratti già letti.
+app.get('/api/esami-originali', (req, res) => {
+  try {
+    res.json(vault.esamiOriginali(req.query.materia));
+  } catch (e) {
+    res.status(400).json({ errore: e.message });
+  }
+});
+
+// DELETE /api/file { materia, sezione, file } — elimina un elemento di una
+// sezione del vault (lezione, concetto, sintesi, esame, simulazione,
+// schema...). Stessa validazione a whitelist di /api/contenuto: vedi
+// vault.eliminaFile.
+app.delete('/api/file', (req, res) => {
+  const { materia, sezione, file } = req.body || {};
+  try {
+    const r = vault.eliminaFile(materia, sezione, file);
+    res.json({ ok: true, ...r });
+  } catch (e) {
+    res.status(400).json({ errore: e.message });
+  }
+});
+
 // GET /api/lezioni?materia=slug — elenco lezioni (per il viewer "Materiali").
 app.get('/api/lezioni', (req, res) => {
   res.json(vault.listLezioni(req.query.materia || null));

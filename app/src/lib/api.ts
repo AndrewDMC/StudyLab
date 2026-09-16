@@ -116,6 +116,26 @@ export interface Schema {
   digitalizzato: string | null;
 }
 
+export type SezioneEliminabile =
+  | 'lezioni'
+  | 'concetti'
+  | 'sintesi'
+  | 'esami-estratti'
+  | 'esami-generati'
+  | 'esami-originali'
+  | 'simulazioni'
+  | 'schemi';
+
+export interface NuovaMateria {
+  nome: string;
+  prefissoId: string;
+  docente?: string;
+  tipoEsame: 'orale' | 'scritto' | 'misto';
+  dataEsame?: string;
+  carteNuoveAlGiorno: number;
+  note?: string;
+}
+
 export type SkillNome = 'cattura' | 'schematizza' | 'genera-flashcard' | 'compatta' | 'estrai-esami' | 'simula-esame' | 'correggi';
 
 export interface Job {
@@ -153,6 +173,16 @@ export const api = {
   cura: (srsId: string, azione: 'approva' | 'scarta') =>
     req('/cura', { method: 'POST', body: JSON.stringify({ srsId, azione }) }),
   concetti: (materia?: string) => req<Concetto[]>(`/concetti${materia ? `?materia=${materia}` : ''}`),
+
+  creaMateria: (dati: NuovaMateria) => req<{ ok: true; slug: string }>('/materie', { method: 'POST', body: JSON.stringify(dati) }),
+
+  esamiOriginali: (materia: string) => req<string[]>(`/esami-originali?materia=${materia}`),
+
+  eliminaFile: (materia: string, sezione: SezioneEliminabile, file: string) =>
+    req<{ ok: true; eliminati: string[] }>('/file', {
+      method: 'DELETE',
+      body: JSON.stringify({ materia, sezione, file }),
+    }),
 
   lezioni: (materia?: string) => req<Lezione[]>(`/lezioni${materia ? `?materia=${materia}` : ''}`),
   sintesi: (materia?: string) => req<Sintesi[]>(`/sintesi${materia ? `?materia=${materia}` : ''}`),

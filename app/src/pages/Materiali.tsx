@@ -9,6 +9,7 @@ import {
   MateriaStato,
   PipelineMateria,
   Schema,
+  SezioneEliminabile,
   SkillNome,
   Simulazione,
   Sintesi,
@@ -70,6 +71,7 @@ function ContenutoMateria({ materia }: { materia: string }) {
   const [pipeline, setPipeline] = useState<PipelineMateria | null>(null);
   const [lezioni, setLezioni] = useState<Lezione[] | null>(null);
   const [sintesi, setSintesi] = useState<Sintesi[] | null>(null);
+  const [originali, setOriginali] = useState<string[] | null>(null);
   const [estratti, setEstratti] = useState<EsameEstratto[] | null>(null);
   const [generati, setGenerati] = useState<EsameGenerato[] | null>(null);
   const [simulazioni, setSimulazioni] = useState<Simulazione[] | null>(null);
@@ -78,11 +80,13 @@ function ContenutoMateria({ materia }: { materia: string }) {
   const [contenuto, setContenuto] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState<string | null>(null);
 
   const ricarica = useCallback(() => {
     api.pipeline(materia).then((r) => setPipeline(r.materie[0] || null));
     api.lezioni(materia).then(setLezioni);
     api.sintesi(materia).then(setSintesi);
+    api.esamiOriginali(materia).then(setOriginali);
     api.esamiEstratti(materia).then(setEstratti);
     api.esamiGenerati(materia).then(setGenerati);
     api.simulazioni(materia).then(setSimulazioni);
@@ -113,6 +117,28 @@ function ContenutoMateria({ materia }: { materia: string }) {
       setErrore((e as Error).message);
     } finally {
       setInCorso(null);
+    }
+  }
+
+  // Eliminazione "dentro la sezione" richiesta dall'utente: conferma sempre
+  // (azione distruttiva, vedi vault.eliminaFile — vale anche per gli
+  // originali d'esame), chiude il visore se il file cancellato era aperto,
+  // ricarica le liste.
+  async function elimina(sezione: SezioneEliminabile, file: string, etichetta: string) {
+    if (!window.confirm(`Eliminare definitivamente "${etichetta}"? L'azione non è reversibile.`)) return;
+    const chiave = `${sezione}-${file}`;
+    setEliminando(chiave);
+    try {
+      await api.eliminaFile(materia, sezione, file);
+      if (aperta && aperta.sezione === sezione && aperta.file === file) {
+        setAperta(null);
+        setContenuto(null);
+      }
+      ricarica();
+    } catch (e) {
+      setErrore((e as Error).message);
+    } finally {
+      setEliminando(null);
     }
   }
 
@@ -152,6 +178,10 @@ function ContenutoMateria({ materia }: { materia: string }) {
                     {inCorso === `schematizza-${l.file}` ? 'Accodo…' : 'Schematizza'}
                   </button>
                 )}
+                <BottoneElimina
+                  inCorso={eliminando === `lezioni-${l.file}`}
+                  onClick={() => elimina('lezioni', l.file, l.titolo)}
+                />
               </div>
             ))}
           </div>
@@ -177,6 +207,10 @@ function ContenutoMateria({ materia }: { materia: string }) {
                     <span className="badge-stato">{s.tipo}</span> · generata {s.generato || '?'}
                   </span>
                 </button>
+                <BottoneElimina
+                  inCorso={eliminando === `sintesi-${s.file}`}
+                  onClick={() => elimina('sintesi', s.file, s.periodo)}
+                />
               </div>
             ))}
           </div>
@@ -185,15 +219,29 @@ function ContenutoMateria({ materia }: { materia: string }) {
 
       <section className="gruppo-materia">
         <h2 className="gruppo-titolo">Esami</h2>
-        {!estratti || !generati || !simulazioni ? (
+        {!originali || !estratti || !generati || !simulazioni ? (
           <p>Caricamento…</p>
-        ) : estratti.length === 0 && generati.length === 0 ? (
+        ) : originali.length === 0 && estratti.length === 0 && generati.length === 0 ? (
           <p className="sottotitolo">
-            Nessun esame estratto ancora. Lancia "Estrai esami" dalle Azioni qui sopra per leggere i temi in
-            05-esami/originali/.
+            Nessun esame ancora. Carica i temi originali qui sopra, poi lancia "Estrai esami" dalle Azioni per
+            leggerli.
           </p>
         ) : (
           <div className="lista-lezioni">
+            {originali.map((percorso) => (
+              <div key={percorso} className="riga-lezione">
+                <span className="riga-lezione-corpo riga-lezione-statica">
+                  <span className="riga-lezione-titolo">{percorso.split('/').pop()}</span>
+                  <span className="riga-lezione-meta">
+                    <span className="badge-stato">originale</span> · {percorso}
+                  </span>
+                </span>
+                <BottoneElimina
+                  inCorso={eliminando === `esami-originali-${percorso}`}
+                  onClick={() => elimina('esami-originali', percorso, percorso)}
+                />
+              </div>
+            ))}
             {estratti.map((e) => (
               <div key={e.file} className={aperta?.file === e.file ? 'riga-lezione attiva' : 'riga-lezione'}>
                 <button
@@ -205,6 +253,10 @@ function ContenutoMateria({ materia }: { materia: string }) {
                     <span className="badge-stato">estratto</span> · {e.esercizi} esercizi · {e.file}
                   </span>
                 </button>
+                <BottoneElimina
+                  inCorso={eliminando === `esami-estratti-${e.file}`}
+                  onClick={() => elimina('esami-estratti', e.file, e.file)}
+                />
               </div>
             ))}
             {generati.map((g) => {
@@ -234,6 +286,10 @@ function ContenutoMateria({ materia }: { materia: string }) {
                       {inCorso === `correggi-${g.slug}` ? 'Accodo…' : 'Correggi'}
                     </button>
                   )}
+                  <BottoneElimina
+                    inCorso={eliminando === `esami-generati-${g.file}`}
+                    onClick={() => elimina('esami-generati', g.file, g.slug)}
+                  />
                 </div>
               );
             })}
@@ -248,6 +304,10 @@ function ContenutoMateria({ materia }: { materia: string }) {
                     <span className="badge-stato">corretta</span> · {s.punteggio ?? '?'}/{s.punteggioTotale ?? '?'}
                   </span>
                 </button>
+                <BottoneElimina
+                  inCorso={eliminando === `simulazioni-${s.file}`}
+                  onClick={() => elimina('simulazioni', s.file, `Correzione ${s.data || ''}`)}
+                />
               </div>
             ))}
           </div>
@@ -276,6 +336,10 @@ function ContenutoMateria({ materia }: { materia: string }) {
                     {s.digitalizzato || '?'}
                   </span>
                 </button>
+                <BottoneElimina
+                  inCorso={eliminando === `schemi-${s.file}`}
+                  onClick={() => elimina('schemi', s.file, s.titolo)}
+                />
               </div>
             ))}
           </div>
@@ -303,6 +367,14 @@ function ContenutoMateria({ materia }: { materia: string }) {
 
       <JobQueue />
     </>
+  );
+}
+
+function BottoneElimina({ onClick, inCorso }: { onClick: () => void; inCorso: boolean }) {
+  return (
+    <button className="chip-azione chip-pericolo" disabled={inCorso} title="Elimina definitivamente" onClick={onClick}>
+      {inCorso ? 'Elimino…' : 'Elimina'}
+    </button>
   );
 }
 

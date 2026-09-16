@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, MateriaStato, PipelineMateria } from '../lib/api';
+import { api, MateriaStato, NuovaMateria, PipelineMateria } from '../lib/api';
 
 // "The Front Page": ogni materia si apre come la prima pagina di un
 // giornale — l'azione più urgente è il titolo in grande, il resto va in
@@ -13,14 +13,16 @@ export function Dashboard() {
   const [pipeline, setPipeline] = useState<PipelineMateria[] | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
 
-  useEffect(() => {
+  const ricarica = () => {
     Promise.all([api.stato(), api.pipeline()])
       .then(([s, p]) => {
         setStato(s);
         setPipeline(p.materie);
       })
       .catch((e) => setErrore(e.message));
-  }, []);
+  };
+
+  useEffect(ricarica, []);
 
   if (errore) return <p className="errore">Errore: {errore}</p>;
   if (!stato || !pipeline) return <p className="caricamento">Caricamento…</p>;
@@ -28,19 +30,161 @@ export function Dashboard() {
   if (stato.materie.length === 0) {
     return (
       <div className="dashboard-vuoto">
-        <p>
-          Nessuna materia ancora. Crea una cartella in <code>materie/</code> per iniziare.
-        </p>
+        <p>Nessuna materia ancora.</p>
+        <NuovaMateriaForm onCreata={ricarica} />
       </div>
     );
   }
 
   return (
-    <div className="stack-materie">
-      {stato.materie.map((m) => {
-        const p = pipeline.find((x) => x.slug === m.slug);
-        return p ? <CardMateria key={m.slug} m={m} p={p} /> : null;
-      })}
+    <>
+      <div className="stack-materie">
+        {stato.materie.map((m) => {
+          const p = pipeline.find((x) => x.slug === m.slug);
+          return p ? <CardMateria key={m.slug} m={m} p={p} /> : null;
+        })}
+      </div>
+      <NuovaMateriaForm onCreata={ricarica} />
+    </>
+  );
+}
+
+// Creazione materia "direttamente dall'interfaccia" (richiesta utente): la
+// panoramica non è più solo una vista sulle materie già presenti nel vault,
+// è anche il punto da cui nascono. Stesso pattern a due stati (bottone →
+// form inline) usato dall'editor schema in Materiali.tsx.
+function NuovaMateriaForm({ onCreata }: { onCreata: () => void }) {
+  const [aperto, setAperto] = useState(false);
+  const [nome, setNome] = useState('');
+  const [prefissoId, setPrefissoId] = useState('');
+  const [prefissoToccato, setPrefissoToccato] = useState(false);
+  const [docente, setDocente] = useState('');
+  const [tipoEsame, setTipoEsame] = useState<NuovaMateria['tipoEsame']>('scritto');
+  const [dataEsame, setDataEsame] = useState('');
+  const [carteNuoveAlGiorno, setCarteNuoveAlGiorno] = useState('15');
+  const [salvando, setSalvando] = useState(false);
+  const [errore, setErrore] = useState<string | null>(null);
+
+  function suggerisciPrefisso(v: string) {
+    if (prefissoToccato) return;
+    const lettere = v.replace(/[^a-zA-Z]/g, '').toUpperCase();
+    setPrefissoId(lettere.slice(0, 4));
+  }
+
+  function reset() {
+    setNome('');
+    setPrefissoId('');
+    setPrefissoToccato(false);
+    setDocente('');
+    setTipoEsame('scritto');
+    setDataEsame('');
+    setCarteNuoveAlGiorno('15');
+    setErrore(null);
+  }
+
+  async function salva() {
+    setErrore(null);
+    setSalvando(true);
+    try {
+      await api.creaMateria({
+        nome: nome.trim(),
+        prefissoId: prefissoId.trim(),
+        docente: docente.trim() || undefined,
+        tipoEsame,
+        dataEsame: dataEsame || undefined,
+        carteNuoveAlGiorno: parseInt(carteNuoveAlGiorno, 10),
+      });
+      reset();
+      setAperto(false);
+      onCreata();
+    } catch (e) {
+      setErrore((e as Error).message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (!aperto) {
+    return (
+      <button className="bottone-secondario bottone-nuova-materia" onClick={() => setAperto(true)}>
+        + Nuova materia
+      </button>
+    );
+  }
+
+  const valido = nome.trim().length > 0 && /^[A-Z]{2,8}$/.test(prefissoId.trim()) && parseInt(carteNuoveAlGiorno, 10) > 0;
+
+  return (
+    <div className="editor-schema form-nuova-materia">
+      <div className="griglia-form">
+        <label>
+          Nome materia
+          <input
+            className="ricerca"
+            placeholder="Analisi Matematica II"
+            value={nome}
+            onChange={(e) => {
+              setNome(e.target.value);
+              suggerisciPrefisso(e.target.value);
+            }}
+          />
+        </label>
+        <label>
+          Prefisso ID concetti
+          <input
+            className="ricerca"
+            placeholder="MAT"
+            value={prefissoId}
+            onChange={(e) => {
+              setPrefissoToccato(true);
+              setPrefissoId(e.target.value.toUpperCase());
+            }}
+          />
+        </label>
+        <label>
+          Docente (opzionale)
+          <input className="ricerca" value={docente} onChange={(e) => setDocente(e.target.value)} />
+        </label>
+        <label>
+          Tipo esame
+          <select className="select-materia" value={tipoEsame} onChange={(e) => setTipoEsame(e.target.value as NuovaMateria['tipoEsame'])}>
+            <option value="scritto">scritto</option>
+            <option value="orale">orale</option>
+            <option value="misto">misto</option>
+          </select>
+        </label>
+        <label>
+          Data esame (opzionale)
+          <input className="ricerca" type="date" value={dataEsame} onChange={(e) => setDataEsame(e.target.value)} />
+        </label>
+        <label>
+          Carte nuove al giorno
+          <input
+            className="ricerca"
+            type="number"
+            min={1}
+            max={200}
+            value={carteNuoveAlGiorno}
+            onChange={(e) => setCarteNuoveAlGiorno(e.target.value)}
+          />
+        </label>
+      </div>
+      {errore && <p className="errore">Errore: {errore}</p>}
+      <div className="carica-controlli">
+        <button
+          className="bottone-secondario"
+          onClick={() => {
+            reset();
+            setAperto(false);
+          }}
+          disabled={salvando}
+        >
+          Annulla
+        </button>
+        <button className="chip-azione evidenzia" onClick={salva} disabled={salvando || !valido}>
+          {salvando ? 'Creo…' : 'Crea materia'}
+        </button>
+      </div>
     </div>
   );
 }

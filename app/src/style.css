@@ -302,6 +302,25 @@ h1 { margin: 0 0 0.25rem; font-size: 1.4rem; font-weight: 800; }
   text-align: center;
   color: var(--text-2);
 }
+.dashboard-vuoto .bottone-nuova-materia { margin-top: 1rem; }
+
+.bottone-nuova-materia { margin-top: 1.25rem; }
+
+.form-nuova-materia { margin-top: 1.25rem; }
+.griglia-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.griglia-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+.griglia-form .ricerca,
+.griglia-form .select-materia { margin-bottom: 0; }
 
 /* ─── Buttons ─── */
 .bottone-grande {
@@ -370,6 +389,9 @@ h1 { margin: 0 0 0.25rem; font-size: 1.4rem; font-weight: 800; }
 .chip-azione:hover { border-color: var(--text-2); color: var(--text); }
 .chip-azione.evidenzia { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .chip-azione:disabled { opacity: 0.4; cursor: default; }
+
+.chip-pericolo { color: var(--rosso); background: none; margin: 0 0.6rem; flex-shrink: 0; }
+.chip-pericolo:hover { border-color: var(--rosso); color: var(--rosso); }
 
 /* ─── Form Controls ─── */
 .barra-controlli { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
@@ -569,6 +591,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.4rem; font-weight: 800; }
 }
 .riga-lezione-titolo { font-weight: 600; }
 .riga-lezione-meta { font-size: 0.78rem; color: var(--text-2); white-space: nowrap; }
+.riga-lezione-statica { cursor: default; }
 
 /* ─── Status Badges ─── */
 .badge-stato {
